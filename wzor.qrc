@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/wzor">
+        <file>wzor.json</file>
+    </qresource>
+</RCC>

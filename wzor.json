@@ -1,0 +1,34 @@
+{
+    "ARX": {
+        "CzyOgraniczac": true,
+        "ograniczenieRegulowaniaMax": 10,
+        "ograniczenieRegulowaniaMin": -10,
+        "ograniczenieSterowaniaMax": 10,
+        "ograniczenieSterowaniaMin": -10,
+        "opoznienie": 1,
+        "wspolczynnikiA": [
+            -0.4,
+            0,
+            0
+        ],
+        "wspolczynnikiB": [
+            0.6,
+            0,
+            0
+        ]
+    },
+    "GeneratorW": {
+        "Amplituda": 1,
+        "CzasRzeczywisty": 10,
+        "SkladowaStala": 0,
+        "TrybPracy": 0,
+        "Wypelnienie": 25
+    },
+    "Regulator": {
+        "SposobLiczeniaCalki": 1,
+        "StalaC": 5,
+        "StalaR": 0.2,
+        "WzmocnienieK": 0.5,
+        "wybranyRegulator": 0
+    }
+}
