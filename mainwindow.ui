@@ -64,7 +64,7 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>337</width>
+         <width>336</width>
          <height>991</height>
         </rect>
        </property>
@@ -762,30 +762,6 @@
     </item>
    </layout>
   </widget>
-  <widget class="QMenuBar" name="menubar">
-   <property name="geometry">
-    <rect>
-     <x>0</x>
-     <y>0</y>
-     <width>1507</width>
-     <height>21</height>
-    </rect>
-   </property>
-   <widget class="QMenu" name="menuZapisz">
-    <property name="title">
-     <string>Zapisz</string>
-    </property>
-    <addaction name="actionWybierz_miejsce"/>
-   </widget>
-   <widget class="QMenu" name="menuOtw_rz">
-    <property name="title">
-     <string>Otwórz</string>
-    </property>
-    <addaction name="actionWybierz_plik"/>
-   </widget>
-   <addaction name="menuZapisz"/>
-   <addaction name="menuOtw_rz"/>
-  </widget>
   <widget class="QToolBar" name="toolBar">
    <property name="windowTitle">
     <string>toolBar</string>
@@ -797,14 +773,39 @@
     <bool>false</bool>
    </attribute>
   </widget>
-  <action name="actionWybierz_miejsce">
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1507</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuMenu">
+    <property name="title">
+     <string>Menu</string>
+    </property>
+    <addaction name="actionZapisz"/>
+    <addaction name="actionOtworz"/>
+    <addaction name="separator"/>
+    <addaction name="actionPolacz"/>
+   </widget>
+   <addaction name="menuMenu"/>
+  </widget>
+  <action name="actionZapisz">
    <property name="text">
-    <string>Wybierz miejsce</string>
+    <string>Zapisz</string>
    </property>
   </action>
-  <action name="actionWybierz_plik">
+  <action name="actionOtworz">
    <property name="text">
-    <string>Wybierz plik</string>
+    <string>Otwórz</string>
+   </property>
+  </action>
+  <action name="actionPolacz">
+   <property name="text">
+    <string>Połącz</string>
    </property>
   </action>
  </widget>

@@ -2,6 +2,7 @@
 #include "ui_mainwindow.h"
 //potrzebne by mainwindow wiedział
 #include "parametryarx.h"
+#include "connectionwindow.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -464,7 +465,7 @@ void MainWindow::on_ustawGenerator_clicked()
     m_uslugi.set_wypelnienie(readWypelnienie());
 }
 
-void MainWindow::on_actionWybierz_miejsce_triggered()
+void MainWindow::on_actionZapisz_triggered()
 {
     QJsonObject UAR;
     QJsonArray wspolczynnikiA;
@@ -511,8 +512,8 @@ void MainWindow::on_actionWybierz_miejsce_triggered()
     Filtr["do"] = ui->nasycenieMax->value();
 
     QJsonObject Wykresy;
-    Wykresy["WielkoscWykresu"]=ui->rozmiarWykresu->value();
-    Wykresy["Interwal"]=ui->interwal->value();
+    Wykresy["WielkoscWykresu"] = ui->rozmiarWykresu->value();
+    Wykresy["Interwal"] = ui->interwal->value();
 
     if (ui->radioWindup->isChecked()) { //0-antiwindup, 1-ograniczenie
         Filtr["ktoryFiltr"] = 0;
@@ -541,7 +542,7 @@ void MainWindow::on_actionWybierz_miejsce_triggered()
     }
 }
 
-void MainWindow::on_actionWybierz_plik_triggered()
+void MainWindow::on_actionOtworz_triggered()
 {
     QString sciezka = QFileDialog::getOpenFileName(this,
                                                    "Wczytaj dane z JSON",
@@ -556,6 +557,13 @@ void MainWindow::on_actionWybierz_plik_triggered()
 
     QMessageBox::information(this, "Sukces", "Dane zostały wczytane.");
 }
+
+void MainWindow::on_actionPolacz_triggered()
+{
+    ConnectionWindow *window = new ConnectionWindow(this);
+    window->show();
+}
+
 void MainWindow::readNasycenieMax()
 {
     m_uslugi.set_m_nasycenieMax(ui->nasycenieMax->value());
@@ -759,8 +767,8 @@ void MainWindow::wczytajWartosciZeSciezki(QString sciezka)
         QJsonObject Wykresy = UAR["Wykresy"].toObject();
         qDebug() << Wykresy["WielkoscWykresu"].toInt();
         qDebug() << Wykresy["Interwal"].toInt();
-       ui->rozmiarWykresu->setValue(Wykresy["WielkoscWykresu"].toInt());
-       ui->interwal->setValue(Wykresy["Interwal"].toInt());
+        ui->rozmiarWykresu->setValue(Wykresy["WielkoscWykresu"].toInt());
+        ui->interwal->setValue(Wykresy["Interwal"].toInt());
     }
 
     on_ZapiszRegulatory_clicked();

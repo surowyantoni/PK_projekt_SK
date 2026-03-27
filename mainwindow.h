@@ -57,13 +57,15 @@ private slots:
     void on_Reset_clicked();
     void on_ustawGenerator_clicked();
 
-    void on_actionWybierz_miejsce_triggered();
-
-    void on_actionWybierz_plik_triggered();
-
     void on_ustawFiltr_clicked();
 
     void on_resetPID_clicked();
+
+    void on_actionZapisz_triggered();
+
+    void on_actionOtworz_triggered();
+
+    void on_actionPolacz_triggered();
 
 private:
     Ui::MainWindow *ui;
