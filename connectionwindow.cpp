@@ -17,6 +17,10 @@ ConnectionWindow::ConnectionWindow(NetService *net, QWidget *parent)
 
     connect(service, &NetService::logAppend, this, &ConnectionWindow::log);
     connect(service, &NetService::updateStatus, this, &ConnectionWindow::updateStatus);
+    connect(service, &NetService::deviceFound, this, [this](QString ip){
+        if (ui->comboIP->findText(ip) == -1) ui->comboIP->addItem(ip);
+    });
+    connect(service, &NetService::authRequired, this, &ConnectionWindow::onAuthRequired);
 
     for (const QHostAddress &address : QNetworkInterface::allAddresses())
         if (address.protocol() == QAbstractSocket::IPv4Protocol && address != QHostAddress(QHostAddress::LocalHost))
@@ -76,12 +80,14 @@ void ConnectionWindow::decomposeIPAddres()
 void ConnectionWindow::on_btnSearch_clicked()
 {
     log("Skanowanie sieci...");
-    decomposeIPAddres();
+    ui->comboIP->clear();
+    service->searchDevices();
 }
 
 //Ustawienie trybu. Jeżeli ustawimy na serwer to go uruchamiamy, jeżeli klient - zamykamy serwer i ustawiamy klienta
 void ConnectionWindow::on_radioServer_toggled(bool checked)
 {
+    service->stopAll();
     if (checked)
         service->startAsServer(ui->spinPort->value());
     else
@@ -90,12 +96,23 @@ void ConnectionWindow::on_radioServer_toggled(bool checked)
 
 void ConnectionWindow::on_btnConnect_clicked()
 {
+    QString ip = ui->comboIP->currentText();
+    if (ip.isEmpty())
+        ip = composeIPAddres();
 
+    service->startAsClient(ip, ui->spinPort->value());
 }
 
 void ConnectionWindow::on_btnDisconnect_clicked()
 {
+    int res = QMessageBox::question(this, "Rozłączanie", "Czy na pewno chcesz przerwać połączenie i wrócić do trybu stacjonarnego?");
 
+    if (res == QMessageBox::Yes)
+    {
+        log("Zażądano rozłączenia z partnerem.");
+        service->stopAll(); // Zlecenie zatrzymania usług sieciowych [Hist.]
+        updateStatus(false); // Aktualizacja GUI [4]
+    }
 }
 
 void ConnectionWindow::updateStatus(bool connected)
@@ -112,6 +129,23 @@ void ConnectionWindow::updateStatus(bool connected)
         ui->labelConnStatus->setStyleSheet("color: red;");
         ui->labelRemoteIP->setText("IP zdalne: -");
     }
+}
+
+void ConnectionWindow::onAuthRequired(QString ip)
+{
+    QMessageBox msgBox;
+    msgBox.setText("Zapytanie od: " + ip);
+    msgBox.setInformativeText("Czy przejść w tryb sieciowy?");
+    msgBox.addButton("Generuj kod", QMessageBox::AcceptRole);
+    msgBox.addButton("Odrzuć", QMessageBox::RejectRole);
+    int result = msgBox.exec();
+
+    if (result == QMessageBox::AcceptRole)
+    {
+        int code = QRandomGenerator::global()->bounded(1000, 9999);
+        service->verifyCode(QString::number(code));
+        log("Wygenerowano kod: " + QString::number(code));
+    } else service->stopAll();
 }
 
 ConnectionWindow::~ConnectionWindow()

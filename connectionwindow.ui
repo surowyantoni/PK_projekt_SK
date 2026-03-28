@@ -203,6 +203,9 @@
        <layout class="QVBoxLayout">
         <item>
          <widget class="QLabel" name="labelConnStatus">
+          <property name="styleSheet">
+           <string notr="true">color: red;</string>
+          </property>
           <property name="text">
            <string>● Rozłączono</string>
           </property>

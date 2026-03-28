@@ -17,7 +17,6 @@ public:
     void stopAll();                                             //Zatrzymaj serwer/klient
 
     void searchDevices();                                       //UDP broadcast - wyszukiwanie urządzeń
-    void verifyCode(QString code);                              //Weryfikacja kodu
 
 signals:                                                        //Do GUI:
     void updateStatus(bool connected, QString remoteIP = "");   //Ustaw status
@@ -39,9 +38,10 @@ private:
     Server *server = nullptr;                                   //Serwer
     QUdpSocket *udp = nullptr;                                  //Gniazdo UDP
 
-    int currentAuthCode;                                        //Aktualny kod
+    QString currentAuthCode;                                        //Aktualny kod
     const int discoveryPort = 5001;                             //Port do broadcast
     int authAttempts = 0;                                       //Próby podłączenia
+    void verifyCode(int id, QString code);                      //Weryfikacja kodu
     void sendPacket(quint8 type, QString payload = "");         //Wyślij pakiet
 };
 

@@ -10,7 +10,7 @@ class Server : public QObject
     Q_OBJECT
 public:
     explicit Server(QObject *parent = nullptr);
-    void listen(int port);
+    bool listen(int port);
     void stopListening();
     void sendTo(int id, QByteArray data);
 

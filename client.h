@@ -11,7 +11,7 @@ public:
     explicit Client(QObject *parent = nullptr);
     void connectTo(QString address, int port);      //Podłącz do
     void disconnect();                              //Rozłącz
-    bool isConnected();                             //Sprawdzenie poprawności połączenia
+    void sendData(QByteArray data);                        //Sprawdzenie poprawności połączenia
 
 signals:
     void connected();                               //
