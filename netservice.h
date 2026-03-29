@@ -17,12 +17,18 @@ public:
     void stopAll();                                             //Zatrzymaj serwer/klient
 
     void searchDevices();                                       //UDP broadcast - wyszukiwanie urządzeń
+    void verifyCode(QString code);                              //Weryfikacja kodu
+    void setAuthMode(int mode, QString code);
+    void sendCodeToCheck(QString code);
+    void extracted();
+    void sendPacket(quint8 type, QString payload = ""); // Wyślij pakiet
 
-signals:                                                        //Do GUI:
+signals:                                                      // Do GUI:
     void updateStatus(bool connected, QString remoteIP = "");   //Ustaw status
     void logAppend(QString log);                                //Wypisz log
 
     void authRequired(QString ip);                              //Pokazuj okno akceptacji
+    void authErrorReceived(int info);
     void codeEntryRequired();                                   //Wpisz kod
 
     void deviceFound(QString ip);                               //Znaleziono...
@@ -38,11 +44,11 @@ private:
     Server *server = nullptr;                                   //Serwer
     QUdpSocket *udp = nullptr;                                  //Gniazdo UDP
 
-    QString currentAuthCode;                                        //Aktualny kod
+    QString currentAuthCode;                                    //Aktualny kod
     const int discoveryPort = 5001;                             //Port do broadcast
     int authAttempts = 0;                                       //Próby podłączenia
-    void verifyCode(int id, QString code);                      //Weryfikacja kodu
-    void sendPacket(quint8 type, QString payload = "");         //Wyślij pakiet
+
+    void stopAllLocal();
 };
 
 #endif // NETSERVICE_H

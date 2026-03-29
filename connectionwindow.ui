@@ -10,7 +10,7 @@
     <height>500</height>
    </rect>
   </property>
-  <layout class="QVBoxLayout" name="mainLayout" stretch="1,1,4">
+  <layout class="QVBoxLayout" name="mainLayout" stretch="1,1,4,0">
    <item>
     <layout class="QHBoxLayout" name="topLayout">
      <item>
@@ -45,6 +45,26 @@
       <widget class="QPushButton" name="btnDisconnect">
        <property name="text">
         <string>Rozłącz</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btnStart">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="text">
+        <string>Start</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btnStop">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="text">
+        <string>Stop</string>
        </property>
       </widget>
      </item>
@@ -97,7 +117,11 @@
       </widget>
      </item>
      <item>
-      <widget class="QLineEdit" name="editIP"/>
+      <widget class="QLineEdit" name="editIP">
+       <property name="text">
+        <string>127</string>
+       </property>
+      </widget>
      </item>
      <item>
       <widget class="QLabel" name="labelDot1">
@@ -107,7 +131,11 @@
       </widget>
      </item>
      <item>
-      <widget class="QLineEdit" name="editIP2"/>
+      <widget class="QLineEdit" name="editIP2">
+       <property name="text">
+        <string>0</string>
+       </property>
+      </widget>
      </item>
      <item>
       <widget class="QLabel" name="labelDot2">
@@ -117,7 +145,11 @@
       </widget>
      </item>
      <item>
-      <widget class="QLineEdit" name="editIP3"/>
+      <widget class="QLineEdit" name="editIP3">
+       <property name="text">
+        <string>0</string>
+       </property>
+      </widget>
      </item>
      <item>
       <widget class="QLabel" name="labelDot3">
@@ -127,7 +159,11 @@
       </widget>
      </item>
      <item>
-      <widget class="QLineEdit" name="editIP4"/>
+      <widget class="QLineEdit" name="editIP4">
+       <property name="text">
+        <string>1</string>
+       </property>
+      </widget>
      </item>
      <item>
       <widget class="QComboBox" name="comboIP">
@@ -254,6 +290,30 @@
          </widget>
         </item>
        </layout>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <widget class="QLineEdit" name="editMsg"/>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btnSend">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="text">
+        <string>Wyślij</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btnClear">
+       <property name="text">
+        <string>Wyczyść</string>
+       </property>
       </widget>
      </item>
     </layout>

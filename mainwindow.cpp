@@ -560,7 +560,8 @@ void MainWindow::on_actionOtworz_triggered()
 
 void MainWindow::on_actionPolacz_triggered()
 {
-    ConnectionWindow *window = new ConnectionWindow(this);
+    NetService *service = new NetService(this);
+    ConnectionWindow *window = new ConnectionWindow(service, this);
     window->show();
 }
 
