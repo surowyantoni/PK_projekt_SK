@@ -112,7 +112,7 @@ void NetService::processIncomingData(int id, QByteArray data)
 {
     QDataStream in(&data, QIODevice::ReadOnly);
     quint8 type;
-    in >> type; // Odczyt typu ramki z Twojego protokołu [4]
+    in >> type;                             //Odczyt typu z protokołu
     qDebug() << type;
     switch (type)
     {
@@ -170,8 +170,8 @@ void NetService::processIncomingData(int id, QByteArray data)
         case SIM_DATA:
         {
             //quint32 k; double u, y;
-            //in >> k >> u >> y; // Odtworzenie stanu próbki [16]
-            // Przekazanie danych do warstwy prezentacji (wykresy) [18]
+            //in >> k >> u >> y; // Odtworzenie stanu próbki
+            // Przekazanie danych do warstwy prezentacji (wykresy)
             //emit simulationDataReceived(u, y, k);
         break;
         }
@@ -211,7 +211,7 @@ void NetService::sendPacket(quint8 type, QString payload)
     qDebug() << package;
 
     if (client && client->isConnected()) client->sendData(package);
-    else if (server) server->sendTo(0, package); // Wysyłka do pierwszego klienta [9]
+    else if (server) server->sendTo(0, package); // Wysyłka do pierwszego klienta
 }
 
 void NetService::handleDisconnection()
