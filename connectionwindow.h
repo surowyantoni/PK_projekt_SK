@@ -28,7 +28,7 @@ private slots:
     void on_radioServer_toggled(bool checked);      //Server start/stop -> serwis
 
     void log(QString text);                         //Logowanie
-    void updateStatus(bool connected);              //UI status
+    void updateStatus(bool connected, QString ip);  //UI status
     void onAuthRequired(QString ip);                //Wyrzucenie okna
     void onAuthError(int attempt);                  //Reakcja na zły kod
     void onCodeEntryRequired();                     //Prośba o podanie kodu

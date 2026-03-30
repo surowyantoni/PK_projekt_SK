@@ -69,6 +69,14 @@ private slots:
 
     void on_actionPolacz_triggered();
 
+    void onSampleReceived(double u, double y, quint32 k);
+    void onPidUpdated(double p, double i, double d, int mode, double min, double max);
+    void onGenUpdated(int type, double amp, double per, double off, double duty);
+    void onArxUpdated(const QVector<double>& A, const QVector<double>& B, int k, double sigma, double minU, double maxU, double minY, double maxY);
+
+    // Metoda sterująca blokadami
+    void applyNetworkRole(bool isRegulator);
+
 private:
     Ui::MainWindow *ui;
     WarstaUslug m_uslugi;
@@ -83,6 +91,9 @@ private:
     double time = 0;
     //QTimer * timer;
     friend class ParametryARX;
+
+    bool m_isRegulator = false;
+    quint32 m_sampleK = 0;
 
     //double freq=200; częstotliwość odświerzania
     int range = 10; //szerokość wykresu

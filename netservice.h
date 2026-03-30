@@ -20,8 +20,12 @@ public:
     void verifyCode(QString code);                              //Weryfikacja kodu
     void setAuthMode(int mode, QString code);
     void sendCodeToCheck(QString code);
-    void extracted();
-    void sendPacket(quint8 type, QString payload = ""); // Wyślij pakiet
+    void sendBinaryPacket(quint8 type, const QByteArray &data = ""); // Wyślij pakiet
+    void sendSample(quint32 k, double u, double y);
+    void sendPidConfig(double p, double i, double d, int mode, double min, double max);
+    void sendGenConfig(int type, double amp, double period, double offset, double duty);
+    void sendArxConfig(const QVector<double>& A, const QVector<double>& B, int k, double sigma, double minU, double maxU, double minY, double maxY);
+    void sendSimCmd(quint8 cmd);
 
 signals:                                                      // Do GUI:
     void updateStatus(bool connected, QString remoteIP = "");   //Ustaw status
@@ -32,6 +36,12 @@ signals:                                                      // Do GUI:
     void codeEntryRequired();                                   //Wpisz kod
 
     void deviceFound(QString ip);                               //Znaleziono...
+
+    void sampleReceived(double val, quint32 k);
+    void pidUpdated(double p, double i, double d, int mode, double min, double max);
+    void genUpdated(int type, double amp, double per, double off, double duty);
+    void arxUpdated(const QVector<double>& A, const QVector<double>& B, int k, double sigma, double minU, double maxU, double minY, double maxY);
+    void simulationResetRequested();
 
 private slots:
     void processDiscoveryUdp();                                 //Obsługa wyszukiwania udp
@@ -49,6 +59,8 @@ private:
     int authAttempts = 0;                                       //Próby podłączenia
 
     void stopAllLocal();
+    QString remoteIP;
+    int m_packetCounter = 0;
 };
 
 #endif // NETSERVICE_H

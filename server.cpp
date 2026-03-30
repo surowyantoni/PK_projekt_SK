@@ -21,7 +21,8 @@ void Server::onNewConnection()
             emit dataReceived(id, clients[id]->readAll());
         });
 
-        emit newConn(id, socket->peerAddress().toString());
+        QHostAddress rem_ip(socket->peerAddress().toIPv4Address());
+        emit newConn(id, rem_ip.toString());
     }
 }
 

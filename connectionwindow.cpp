@@ -188,21 +188,23 @@ void ConnectionWindow::on_btnConnect_clicked()
         log("Próba połączenia z " + ip + "...");
         service->startAsClient(ip, ui->spinPort->value());
         ui->btnSend->setEnabled(true);
-        ui->comboMode->setCurrentIndex(1);
-    }
+    } else ui->comboMode->setCurrentIndex(1);
 
 }
 
 void ConnectionWindow::on_btnDisconnect_clicked()
 {
-    int res = QMessageBox::question(this, "Rozłączanie", "Czy na pewno chcesz przerwać połączenie i wrócić do trybu stacjonarnego?");
-
-    if (res == QMessageBox::Yes)
+    if (ui->comboMode->currentIndex() != 0)
     {
-        log("Zażądano rozłączenia z partnerem.");
-        service->stopAll();                         // Zlecenie zatrzymania usług sieciowych
-        updateStatus(false);
-        ui->btnSend->setEnabled(false);
+        int res = QMessageBox::question(this, "Rozłączanie", "Czy na pewno chcesz przerwać połączenie i wrócić do trybu stacjonarnego?");
+
+        if (res == QMessageBox::Yes)
+        {
+            log("Zażądano rozłączenia z partnerem.");
+            service->stopAll();                         // Zlecenie zatrzymania usług sieciowych
+            updateStatus(false, "");
+            ui->btnSend->setEnabled(false);
+        }
     }
 
     ui->comboMode->setCurrentIndex(0);
@@ -212,10 +214,10 @@ void ConnectionWindow::on_btnStart_clicked()
 {
     if (ui->comboMode->currentText() != "STACJONARNY")
     {
+        log("Próba uruchomienia serwera...");
         service->startAsServer(ui->spinPort->value());
-        ui->comboMode->setCurrentIndex(1);
         ui->btnSend->setEnabled(true);
-    }
+    } else ui->comboMode->setCurrentIndex(1);
 }
 
 void ConnectionWindow::on_btnStop_clicked()
@@ -226,7 +228,7 @@ void ConnectionWindow::on_btnStop_clicked()
     {
         log("Wyłączanie serwera...");
         service->stopAll();                         // Zlecenie zatrzymania usług sieciowych
-        updateStatus(false);
+        updateStatus(false, "");
         ui->btnSend->setEnabled(false);
     }
 
@@ -262,24 +264,25 @@ void ConnectionWindow::on_btnClear_clicked()
 
 void ConnectionWindow::on_btnSend_clicked()
 {
-    service->sendPacket(TXT_MSG, ui->editMsg->text());
+    service->sendBinaryPacket(TXT_MSG, ui->editMsg->text().toUtf8());
     log("Wysłano: " + ui->editMsg->text());
     ui->editMsg->clear(); ui->editMsg->setFocus();
 }
 
-void ConnectionWindow::updateStatus(bool connected)
+void ConnectionWindow::updateStatus(bool connected, QString ip)
 {
     if(connected)
     {
         ui->labelConnStatus->setText("● Połączono");
         ui->labelConnStatus->setStyleSheet("color: green;");
-        //ui->labelRemoteIP->setText("IP zdalne: " + socket->peerAddress().toString());
+        ui->labelRemoteIP->setText("IP zdalne: " + ip);
     }
     else
     {
         ui->labelConnStatus->setText("● Rozłączono");
         ui->labelConnStatus->setStyleSheet("color: red;");
         ui->labelRemoteIP->setText("IP zdalne: -");
+        ui->comboMode->setCurrentIndex(0);
     }
 }
 
@@ -300,7 +303,7 @@ void ConnectionWindow::onAuthRequired(QString ip)
         service->setAuthMode(0, code); // Tryb z kodem
     }
     else if (msgBox.clickedButton() == btnNoCode) { service->setAuthMode(1, ""); }
-    else { service->sendPacket(CODE_DENY); }
+    else { service->sendBinaryPacket(CODE_DENY); }
 }
 
 void ConnectionWindow::onAuthError(int attempt)
@@ -318,7 +321,7 @@ void ConnectionWindow::onCodeEntryRequired()
     {
         log("Wysłano kod do weryfikacji...");
         service->sendCodeToCheck(text);
-    } else { service->sendPacket(CODE_DENY); }
+    } else { service->sendBinaryPacket(CODE_DENY); }
 }
 
 ConnectionWindow::~ConnectionWindow()

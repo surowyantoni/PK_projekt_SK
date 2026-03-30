@@ -789,3 +789,26 @@ void MainWindow::wczytajWartosciZeSciezki(QString sciezka)
     on_ustawGenerator_clicked();
     on_ustawWykres_clicked();
 }
+
+void MainWindow::applyNetworkRole(bool isRegulator)
+{
+    m_isRegulator = isRegulator;
+
+    if (isRegulator) { // ROLA: REGULATOR (KLIENT)
+        ui->groupARX->setEnabled(false);    // Regulator nie zmienia modelu obiektu [14]
+        ui->groupPID->setEnabled(true);
+        ui->groupGenerator->setEnabled(true);
+        ui->groupSimParams->setEnabled(true); // Zarządza Start/Stop/Reset [1]
+        log("Tryb Sieciowy: REGULATOR. Blokada edycji ARX.");
+    } else { // ROLA: OBIEKT (SERWER)
+        ui->groupARX->setEnabled(true);
+        ui->groupPID->setEnabled(false);    // Obiekt nie steruje [14]
+        ui->groupGenerator->setEnabled(false);
+        ui->groupSimParams->setEnabled(false); // Czeka na polecenia z sieci
+        log("Tryb Sieciowy: OBIEKT. Blokada sterowania i generatora.");
+    }
+}
+void MainWindow::onPidUpdated(double p, double i, double d, int mode, double min, double max) {}
+void MainWindow::onGenUpdated(int type, double amp, double per, double off, double duty) {}
+void MainWindow::onSampleReceived(double u, double y, quint32 k) {}
+void MainWindow::onArxUpdated(const QVector<double>& A, const QVector<double>& B, int k, double sigma, double minU, double maxU, double minY, double maxY) {}
