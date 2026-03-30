@@ -560,9 +560,22 @@ void MainWindow::on_actionOtworz_triggered()
 
 void MainWindow::on_actionPolacz_triggered()
 {
-    NetService *service = new NetService(this);
-    ConnectionWindow *window = new ConnectionWindow(service, this);
-    window->show();
+    if (!connWindow)
+    {
+        service = new NetService(this);
+        connWindow = new ConnectionWindow(service);
+        connWindow->setAttribute(Qt::WA_DeleteOnClose);
+
+        connect(connWindow, &QObject::destroyed, this, [this]()
+                {
+                    connWindow = nullptr;
+                });
+    }
+
+    connWindow->show();
+    connWindow->setWindowState(Qt::WindowNoState);
+    connWindow->raise();
+    connWindow->activateWindow();
 }
 
 void MainWindow::readNasycenieMax()

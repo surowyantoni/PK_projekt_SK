@@ -6,6 +6,7 @@
 #include <QtCore>
 #include <QtGui>
 //#include <QTimer>
+#include "connectionwindow.h"
 #include "netservice.h"
 #include "qcustomplot.h"
 
@@ -71,7 +72,8 @@ private slots:
 private:
     Ui::MainWindow *ui;
     WarstaUslug m_uslugi;
-    NetService *netService;
+    ConnectionWindow *connWindow = nullptr;
+    NetService *service = nullptr;
     QCPGraph *graph1;
     QCPGraph *graph2;
     QCPGraph *graph3;

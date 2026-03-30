@@ -1,5 +1,6 @@
 #include "connectionwindow.h"
 #include "ProtocolDef.h"
+#include "qevent.h"
 #include "ui_connectionwindow.h"
 
 #include <QRandomGenerator>
@@ -15,6 +16,7 @@ ConnectionWindow::ConnectionWindow(NetService *net, QWidget *parent)
 {
     ui->setupUi(this);
     setWindowTitle("Połączenie sieciowe");
+    setWindowFlags(windowFlags() | Qt::WindowMinimizeButtonHint);
 
     connect(service, &NetService::logAppend, this, &ConnectionWindow::log);
     connect(service, &NetService::updateStatus, this, &ConnectionWindow::updateStatus);
@@ -50,6 +52,32 @@ QString ConnectionWindow::composeIPAddres()
 {
     QString address = ui->editIP->text() + "." + ui->editIP2->text() + "." + ui->editIP3->text()+ "." + ui->editIP4->text();
     return address;
+}
+
+void ConnectionWindow::changeEvent(QEvent *event)
+{
+    if (event->type() == QEvent::WindowStateChange)
+    {
+        if (this->windowState() & Qt::WindowMinimized)
+        {
+            this->hide();
+            //Tutaj możemy zrobić customową logikę co i gdzie ma się pojawić po minimalizacj
+            //aktualnie otwierasz okno z menu
+        }
+    }
+
+    QDialog::changeEvent(event);
+}
+
+void ConnectionWindow::closeEvent(QCloseEvent *event)
+{
+    int res = QMessageBox::question(this, "Zamykanie...", "Czy na pewno chcesz zamknąć okno? Zerwie to aktywne połączenia!");
+
+    if (res == QMessageBox::Yes)
+    {
+        service->stopAll();
+        event->accept();
+    } else event->ignore();
 }
 
 bool ConnectionWindow::isIPValid(QString ip)
