@@ -260,14 +260,14 @@
         <item>
          <widget class="QLabel" name="labelMode">
           <property name="text">
-           <string>Tryb: -</string>
+           <string>Opóźnienie pakietów -</string>
           </property>
          </widget>
         </item>
         <item>
          <widget class="QLabel" name="labelPing">
           <property name="text">
-           <string>Opóźnienie: -</string>
+           <string>Opóźnienie sieci: -</string>
           </property>
          </widget>
         </item>
