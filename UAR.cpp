@@ -38,7 +38,7 @@ double UAR::Symuluj(double sygWe)
 {
     if (choice == 0) {
         wW = PID->Symuluj(sygWe - y1);
-        y1 = ARX.rozpocznij(wW);
+        y1 = ARX.symuluj(wW);
         //cout << y1<<" ";
         if (czyNasycenie) {
             if (y1 > nasycenieMax)
@@ -48,7 +48,7 @@ double UAR::Symuluj(double sygWe)
         }
     } else if (choice == 1) {
         wW = OnOff->symuluj(sygWe - y1);
-        y1 = ARX.rozpocznij(wW);
+        y1 = ARX.symuluj(wW);
         //cout << y1<<" ";
         if (czyNasycenie) {
             if (czyNasycenie) {

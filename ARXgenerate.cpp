@@ -1,42 +1,6 @@
 #include "ARXgenerate.h"
 
 //konstruktory
-ARXgenerate::ARXgenerate()
-{
-    k = 1;
-    z = 0;
-    Uop.push_back(0);
-    U.push_back(0);
-    Y.push_back(0);
-}
-ARXgenerate::ARXgenerate(vector<double> nA, vector<double> nB)
-{
-    A = nA;
-    B = nB;
-    k = 1;
-    z = 0;
-    for (int i = 0; i < k; i++) {
-        Uop.push_back(0);
-    }
-    for (int i = 0; i < B.size(); i++)
-        U.push_back(0);
-    for (int i = 0; i < A.size(); i++)
-        Y.push_back(0);
-}
-ARXgenerate::ARXgenerate(vector<double> nA, vector<double> nB, int nk)
-{
-    A = nA;
-    B = nB;
-    k = nk;
-    z = 0;
-    for (int i = 0; i < k; i++) {
-        Uop.push_back(0);
-    }
-    for (int i = 0; i < B.size(); i++)
-        U.push_back(0);
-    for (int i = 0; i < A.size(); i++)
-        Y.push_back(0);
-}
 ARXgenerate::ARXgenerate(vector<double> nA, vector<double> nB, int nk, double nz)
 {
     A = nA;
@@ -44,7 +8,7 @@ ARXgenerate::ARXgenerate(vector<double> nA, vector<double> nB, int nk, double nz
     k = nk;
     z = nz;
     for (int i = 0; i < k; i++) {
-        Uop.push_back(0);
+        Uopozniony.push_back(0);
     }
     for (int i = 0; i < B.size(); i++)
         U.push_back(0);
@@ -82,10 +46,10 @@ double ARXgenerate::getWartoscY()
 
 deque<double> ARXgenerate::getUop() const
 {
-    return Uop;
+    return Uopozniony;
 }
 
-double ARXgenerate::getK() const
+int ARXgenerate::getK() const
 {
     return k;
 }
@@ -112,50 +76,46 @@ void ARXgenerate::setB(vector<double> b)
 }
 
 //settery ograniczenia wartoœci zadanej
-void ARXgenerate::setMaxZad(double smax)
+void ARXgenerate::setMaxWejscia(double smax)
 {
     maxZad = smax;
 }
-void ARXgenerate::setMinZad(double smin)
+void ARXgenerate::setMinWejscia(double smin)
 {
     minZad = smin;
 }
 //settery ograniczenia wartoœci wyjsciowej
-void ARXgenerate::setMaxReg(double smax)
+void ARXgenerate::setMaxWyjscia(double smax)
 {
     maxReg = smax;
 }
-void ARXgenerate::setMinReg(double smin)
+void ARXgenerate::setMinWyjscia(double smin)
 {
     minReg = smin;
 }
-void ARXgenerate::setOgraniczenie(bool choice)
+void ARXgenerate::setOgraniczenie(bool enabled)
 {
-    check = choice;
+    ograniczenia = enabled;
 }
 
 //funkcja symuluj¹ca obiekt ARX
-double ARXgenerate::rozpocznij(double u)
+double ARXgenerate::symuluj(double u)
 {
-    //if (!check()) {
-    //	cerr << "Bledne wartosci a i b";
-    //	return -100;
-    //}
     int size = B.size() - 1;
 
     U.pop_front();
-    U.push_back(Uop.front());
-    if (!check) {
+    U.push_back(Uopozniony.front());
+    if (!ograniczenia) {
         if (u > maxZad)
-            Uop.push_back(maxZad);
+            Uopozniony.push_back(maxZad);
         else if (u < minZad)
-            Uop.push_back(minZad);
+            Uopozniony.push_back(minZad);
         else
-            Uop.push_back(u);
+            Uopozniony.push_back(u);
     } else {
-        Uop.push_back(u);
+        Uopozniony.push_back(u);
     }
-    Uop.pop_front();
+    Uopozniony.pop_front();
 
     double b = 0, a = 0, y = 0;
 
@@ -166,7 +126,7 @@ double ARXgenerate::rozpocznij(double u)
         a += A.at(i) * Y.at(size - i); // Mnożenie wektora A przez historię wyjść Y
     }
     y = b - a + z;
-    if (!check) {
+    if (!ograniczenia) {
         if (y > maxReg)
             Y.push_back(maxReg);
         else if (y < minReg)
@@ -187,24 +147,24 @@ void ARXgenerate::setZaklocenia(double zakl)
     z = zakl;
 }
 
-void ARXgenerate::setOpoznienie(double op)
+void ARXgenerate::setOpoznienie(int op)
 {
     k = op;
-    zmienOpoznienie();
+    aktualizacjaBuforowPoZmianieOpoznienia();
 }
 
-void ARXgenerate::zmienOpoznienie()
+void ARXgenerate::aktualizacjaBuforowPoZmianieOpoznienia()
 {
-    if (Uop.size() == k) {
+    if (Uopozniony.size() == k) {
         return;
-    } else if (Uop.size() < k) {
-        while (k > Uop.size()) {
-            Uop.push_front(Uop.front());
+    } else if (Uopozniony.size() < k) {
+        while (k > Uopozniony.size()) {
+            Uopozniony.push_front(Uopozniony.front());
         }
         return;
     } else {
-        while (k < Uop.size()) {
-            Uop.pop_back();
+        while (k < Uopozniony.size()) {
+            Uopozniony.pop_back();
         }
     }
 }

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <deque>
-#include <iostream>
 #include <vector>
 
 using namespace std;
@@ -9,21 +8,21 @@ using namespace std;
 class ARXgenerate
 {
 private:
-    vector<double> A = {0}, B = {0}; //wsp��czynniki wektor�w a i b
-    double k = 1, z = 0;             //k=op��nienie transportowe; z=warto�� zak��ce�
-    deque<double> U, Y,        Uop; //U=sygna� wej�ciowy; Y=sygna� wyj�ciowy; Uop=op��niony sygna� wej�ciowy o 'k'
-    bool check = true; //czy limity sprawdzaj�ca warunek
+    vector<double> A, B; //wspolczynniki wektorow A i B
+    int k = 1; // Opoznienie transportowe
+    double z = 0; // Wartosc srodkowa zaklocen
+    deque<double> U; // Sygnal wejsciowy
+    deque<double> Y; // Sygnal wyjsciowy
+    deque<double> Uopozniony; // Opozniony sygnal sejsciowy
+    bool ograniczenia = true; //czy włączone są ograniczenia wartości
     double maxZad = 10, minZad = -10;
     double maxReg = 10, minReg = -10;
+    void aktualizacjaBuforowPoZmianieOpoznienia();
 
 public:
-    //zmienne b�edu
 
     //konstruktory
-    ARXgenerate();
-    ARXgenerate(vector<double> nA, vector<double> nB);         //nA=wielomian A, nB=wielomian B
-    ARXgenerate(vector<double> nA, vector<double> nB, int nk); //nk=op��nienie transportowe
-    ARXgenerate(vector<double> nA, vector<double> nB, int nk, double nz); //nz=warto�� zak��cenia
+    ARXgenerate(vector<double> nA = {0}, vector<double> nB = {0}, int nk = 1, double nz = 0); //nz=warto�� zak��cenia
 
     //gettery
     const vector<double> &getA() const;
@@ -31,7 +30,7 @@ public:
     deque<double> getU() const;
     deque<double> getY() const;
     deque<double> getUop() const;
-    double getK() const;
+    int getK() const;
     double getZ() const;
     double getWartoscU();
     double getWartoscY();
@@ -39,14 +38,13 @@ public:
     //settery
     void setA(vector<double> a);
     void setB(vector<double> b);
-    void setMaxZad(double smax);
-    void setMinZad(double smin);
-    void setMaxReg(double smax);
-    void setMinReg(double smin);
-    void setOgraniczenie(bool choice);
+    void setMaxWejscia(double smax);
+    void setMinWejscia(double smin);
+    void setMaxWyjscia(double smax);
+    void setMinWyjscia(double smin);
+    void setOgraniczenie(bool enabled);
     void setZaklocenia(double zakl);
-    void setOpoznienie(double op);
+    void setOpoznienie(int op);
 
-    double rozpocznij(double u);
-    void zmienOpoznienie();
+    double symuluj(double u);
 };

@@ -1,14 +1,16 @@
 ﻿#include "GenW.h"
+#define _USE_MATH_DEFINES
+#include <cmath>
 
 GenW::GenW()
 {
     czasRzeczywisty = 10;
     czasTaktowania = 200;
-    A = 1;
-    S = 1;
-    P = 1;
-    choice = 0;
-    i = 0;
+    amplituda = 1;
+    skladowaStala = 1;
+    wypelnienie = 1;
+    typSygnalu = Typ::SINUS;
+    krok = 0;
 }
 
 void GenW::setCzasTakt(int Tt)
@@ -21,52 +23,48 @@ void GenW::setCzasRzecz(int Tr)
     czasRzeczywisty = Tr;
 }
 
-void GenW::setA(int a)
+void GenW::setAmplituda(double a)
 {
-    A = a;
+    amplituda = a;
     //aezekmi
 }
 
-void GenW::setS(int s)
+void GenW::setSkladoaStala(double s)
 {
-    S = s;
+    skladowaStala = s;
 }
 
-void GenW::setP(double p)
+void GenW::setWypelnienie(double p)
 {
-    P = p;
+    wypelnienie = p;
 }
 
-void GenW::setChoice(int c)
+void GenW::setTyp(Typ c)
 {
-    choice = c;
+    typSygnalu = c;
 }
 
-double GenW::obliczWartosc()
+double GenW::generuj()
 {
     double w;
-    int T = floor(czasRzeczywisty / (static_cast<double>(czasTaktowania) / 1000.0));
-    //cout << T << endl;
+    int cykli_na_okres = czasRzeczywisty / (static_cast<double>(czasTaktowania) / 1000.0);
     double tempSin;
-    double tempW;
-    if (choice) { //sinus
-        tempSin = i % T;
-        //cout << tempSin << "\t";
-        tempSin /= T;
-        //cout << tempSin << "\t";
-        tempSin *= 2 * 3.1415;
-        //cout << tempSin << "\t";
-        tempW = A * sin(tempSin) + S;
-        //cout << tempW << "\n";
-        w = tempW;
-    } else { //kwadrat
-        if (i % T < P * T)
-            w = (A + S);
-        else
-            w = (S);
+
+    w = skladowaStala;
+    if (typSygnalu == Typ::SINUS)
+    { //sinus
+        tempSin = krok % cykli_na_okres;
+        tempSin /= cykli_na_okres;
+        tempSin *= 2 * M_PI; // zamiana na radiany
+
+        w += amplituda * std::sin(tempSin);
+    } else
+    { //kwadrat
+        if (krok % cykli_na_okres < wypelnienie * cykli_na_okres)
+            w += amplituda;
     }
-    i++;
-    if (i >= T)
-        i = 0;
+    krok++;
+    if (krok >= cykli_na_okres)
+        krok = 0;
     return w;
 }

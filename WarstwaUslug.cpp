@@ -54,10 +54,10 @@ void WarstaUslug::set_m_arx()
     m_arx.setZaklocenia(m_wartoscZaklocen);
     m_arx.setOpoznienie(m_opoznienieTransportowe);
 
-    m_arx.setMaxZad(m_ograniczenieMaxZad);
-    m_arx.setMinZad(m_ograniczenieMinZad);
-    m_arx.setMaxReg(m_ograniczenieMaxReg);
-    m_arx.setMinReg(m_ograniczenieMinReg);
+    m_arx.setMaxWejscia(m_ograniczenieMaxZad);
+    m_arx.setMinWejscia(m_ograniczenieMinZad);
+    m_arx.setMaxWyjscia(m_ograniczenieMaxReg);
+    m_arx.setMinWyjscia(m_ograniczenieMinReg);
     m_arx.setOgraniczenie(m_czyOgraniczenie);
 }
 
@@ -175,25 +175,25 @@ void WarstaUslug::set_czasTaktowania()
 void WarstaUslug::set_Amplituda(int A)
 {
     m_A = A;
-    m_genW.setA(A);
+    m_genW.setAmplituda(A);
 }
 
 void WarstaUslug::set_stalaCzasowa(int S)
 {
     m_S = S;
-    m_genW.setS(S);
+    m_genW.setSkladoaStala(S);
 }
 
 void WarstaUslug::set_choice(bool wybor)
 {
     m_c = wybor;
-    m_genW.setChoice(wybor);
+    m_genW.setTyp((GenW::Typ)wybor);
 }
 
 void WarstaUslug::set_wypelnienie(double P)
 {
     m_p = P;
-    m_genW.setP(P);
+    m_genW.setWypelnienie(P);
 }
 
 WarstaUslug::WarstaUslug()
@@ -309,7 +309,7 @@ void WarstaUslug::resetCzas()
 
 void WarstaUslug::oblicz_WartoscZadana()
 {
-    wartoscZadana = m_genW.obliczWartosc();
+    wartoscZadana = m_genW.generuj();
 }
 
 vector<double> WarstaUslug::get_m_WspolczynnikiA()

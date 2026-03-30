@@ -1,25 +1,27 @@
 #pragma once
 
-#include <cmath>
-#include <iostream>
-#include <vector>
-
-using namespace std;
-
 class GenW
 {
-private:
-    int czasTaktowania, czasRzeczywisty, A, S; //A-amplituda, S-sta³a czasowa
-    bool choice;                               //0-kwadrat; 1-sinus
-    double P;                                  //wype³nienie
-    int i;                                     //numer kroku
 public:
+    enum Typ
+    {
+        KWADRAT = 0,
+        SINUS = 1,
+    };
     GenW();
     void setCzasTakt(int Tt);
     void setCzasRzecz(int Tr);
-    void setA(int a);
-    void setS(int s);
-    void setP(double p);
-    void setChoice(int c); //0-kwadrat; 1-sinus
-    double obliczWartosc();
+    void setAmplituda(double a);
+    void setSkladoaStala(double s);
+    void setWypelnienie(double p);
+    void setTyp(Typ c);
+    double generuj();
+
+
+private:
+    int czasTaktowania, czasRzeczywisty;
+    double amplituda, skladowaStala;
+    Typ typSygnalu;                               //0-kwadrat; 1-sinus
+    double wypelnienie;                                  //wype³nienie
+    int krok;                                     //numer kroku
 };

@@ -11,7 +11,6 @@ CONFIG += c++17
 SOURCES += \
     ARXgenerate.cpp \
     GenW.cpp \
-    GenWar.cpp \
     RegulatorOnOff.cpp \
     RegulatorPID.cpp \
     UAR.cpp \
