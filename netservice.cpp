@@ -183,7 +183,7 @@ void NetService::processIncomingData(int id, QByteArray data)
             m_packetCounter++;
             SimSample s;
             memcpy(&s, data.data() + 1, sizeof(SimSample)); // Deserializacja szybka 1:1 [11]
-            emit sampleReceived(s.u, s.y, s.k);
+            emit sampleReceived(s.u, s.k);
             break;
         }
 

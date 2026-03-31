@@ -25,6 +25,7 @@ struct SimSample
     quint32 k;    // Identyfikator kolejności próbki
     double u;
     double y;    // Przesyłana wartość (u od klienta, y od serwera)
+
 };
 #pragma pack(pop)
 

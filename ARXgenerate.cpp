@@ -1,4 +1,5 @@
 #include "ARXgenerate.h"
+#include "qjsonarray.h"
 
 //konstruktory
 ARXgenerate::ARXgenerate(vector<double> nA, vector<double> nB, int nk, double nz)
@@ -167,4 +168,25 @@ void ARXgenerate::aktualizacjaBuforowPoZmianieOpoznienia()
             Uopozniony.pop_back();
         }
     }
+}
+
+QJsonObject ARXgenerate::toJSON()
+{
+    QJsonObject arx;
+    arx["k"] = k;
+    arx["z"] = z;
+    arx["A"] = QJsonArray();
+    for(auto& el : A)
+        arx["A"].toArray().append(el);
+    arx["B"] = QJsonArray();
+    for(auto& el : A)
+        arx["B"].toArray().append(el);
+    arx["wej"] = QJsonObject();
+    arx["wej"].toObject().insert("min", minZad);
+    arx["wej"].toObject().insert("max", maxZad);
+    arx["wyj"] = QJsonObject();
+    arx["wyj"].toObject().insert("min", minReg);
+    arx["wyj"].toObject().insert("max", maxReg);
+    arx["ogranicznia"] = ograniczenia;
+    return arx;
 }

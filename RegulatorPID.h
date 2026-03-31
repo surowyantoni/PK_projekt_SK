@@ -6,11 +6,11 @@ public:
     enum SposobLiczeniaCalki { Zewnetrzne = 0, Wewnetrzne = 1 };
 
 private:
-    double wartosc_pNas;      //pNas=przed nasyceniem
-    double m_UkladMax = 5.0;  // górna granica sterowania
-    double m_UkladMin = -5.0; // dolna granica sterowania
-    double m_Kaw = 0.1;       // współczynnik anti-windup
-    bool m_czyWindup = false;
+    double wartosc_przed_nasyceniem;
+    double sterowanieMax = 5.0;  // górna granica sterowania
+    double sterowanieMin = -5.0; // dolna granica sterowania
+    double anitWindup = 0.1;       // współczynnik anti-windup
+    bool czyWindup = false;
 
     double m_Uchyb;
 

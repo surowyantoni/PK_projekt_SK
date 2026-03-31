@@ -8,7 +8,6 @@
 //#include "mainwindow.h"
 #include <QObject>
 #include <QTimer>
-#include "timercpp.h"
 #include <functional>
 enum WybranyRegulator { PID = 0, ONOFF = 1, nic = 2 };
 

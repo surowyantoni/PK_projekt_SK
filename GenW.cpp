@@ -68,3 +68,16 @@ double GenW::generuj()
         krok = 0;
     return w;
 }
+
+QJsonObject GenW::toJSON()
+{
+    QJsonObject generator;
+    generator["typ"] = (int)this->typSygnalu;
+    generator["wypelnienie"] = this->wypelnienie;
+    generator["skladowaStala"] = this->skladowaStala;
+    generator["amplituda"] = this->amplituda;
+    generator["czasRzeczywisty"] = this->czasRzeczywisty;
+    generator["czasTaktowania"] = this->czasTaktowania;
+
+    return generator;
+}

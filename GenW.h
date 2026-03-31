@@ -1,5 +1,6 @@
 #pragma once
 
+#include "qjsonobject.h"
 class GenW
 {
 public:
@@ -16,6 +17,7 @@ public:
     void setWypelnienie(double p);
     void setTyp(Typ c);
     double generuj();
+    QJsonObject toJSON();
 
 
 private:

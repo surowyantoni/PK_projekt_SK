@@ -43,6 +43,8 @@ signals:                                                      // Do GUI:
     void arxUpdated(const QVector<double>& A, const QVector<double>& B, int k, double sigma, double minU, double maxU, double minY, double maxY);
     void simulationResetRequested();
 
+    void resetRequested();
+
 private slots:
     void processDiscoveryUdp();                                 //Obsługa wyszukiwania udp
     void handleNewClient(int id, QString ip);                   //Nowe połączenie

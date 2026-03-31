@@ -1,5 +1,6 @@
 #pragma once
 
+#include "qjsonobject.h"
 #include <deque>
 #include <vector>
 
@@ -47,4 +48,6 @@ public:
     void setOpoznienie(int op);
 
     double symuluj(double u);
+
+    QJsonObject toJSON();
 };

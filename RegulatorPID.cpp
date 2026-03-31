@@ -135,13 +135,13 @@ void RegulatorPID::Oblicz_m_SkladowaCalkowania()
         }
 
         // Anti-Windup: Back-calculation
-        if (m_czyWindup) {
-            // wartosc_pNas musi być przekazana lub obliczona wcześniej (u_ideal - u_sat)
-            double bladNasycenia = get_m_WartoscSterowania() - wartosc_pNas;
+        if (czyWindup) {
+            // wartosc_przed_nasyceniem musi być przekazana lub obliczona wcześniej (u_ideal - u_sat)
+            double bladNasycenia = get_m_WartoscSterowania() - wartosc_przed_nasyceniem;
             if (m_AktualnySposobLiczeniaCalki == SposobLiczeniaCalki::Zewnetrzne) {
-                przyrost += (m_Kaw * bladNasycenia * m_StalaCalkowania);
+                przyrost += (anitWindup * bladNasycenia * m_StalaCalkowania);
             } else {
-                przyrost += (m_Kaw * bladNasycenia);
+                przyrost += (anitWindup * bladNasycenia);
             }
         }
 
@@ -168,12 +168,10 @@ void RegulatorPID::Zmiana_m_SposobLiczeniaCalki(
 {
     SposobLiczeniaCalki m_PoprzedniSposobLiczeniaCalki = m_AktualnySposobLiczeniaCalki;
     if (sposobLiczeniaCalki == m_PoprzedniSposobLiczeniaCalki) {
-        qDebug() << "takie same";
         set_m_SposobLiczeniaCalki(sposobLiczeniaCalki);
         return; //jezeli nie ma zmiany sposobu liczenia calki to wychodzimy z funkcji
     }
     if (m_StalaCalkowania == 0.0) {
-        qDebug() << "stala = 0";
         m_AktualnySposobLiczeniaCalki
             = sposobLiczeniaCalki; //jezeli stala calkowania = 0 to mozemy poprostu podmienic bez obawy o zmiany wartosci
         return;
@@ -181,18 +179,15 @@ void RegulatorPID::Zmiana_m_SposobLiczeniaCalki(
 
     if (sposobLiczeniaCalki == SposobLiczeniaCalki::Wewnetrzne
         && m_PoprzedniSposobLiczeniaCalki == SposobLiczeniaCalki::Zewnetrzne) {
-        qDebug() << "zwe na wew";
         m_SumaUchybuOdPoczatku
             = m_SumaUchybuOdPoczatku
               / m_StalaCalkowania; //przeliczenie sumy uchybu przy zmianie sposobu liczenia calki, w sposob gdy z Zewnetrznego na Wewnetrzny
     } else if (sposobLiczeniaCalki == SposobLiczeniaCalki::Zewnetrzne
                && m_PoprzedniSposobLiczeniaCalki == SposobLiczeniaCalki::Wewnetrzne) {
-        qDebug() << "wew na zew";
         m_SumaUchybuOdPoczatku
             = m_SumaUchybuOdPoczatku
               * m_StalaCalkowania; //przeliczenie sumy uchybu przy zmianie sposobu liczenia calki, gdy z Wewnetrznego na Zewnetrzny
     }
-    qDebug() << "przeszlo";
     set_m_SposobLiczeniaCalki(sposobLiczeniaCalki);
 }
 
@@ -212,15 +207,15 @@ double RegulatorPID::Symuluj(double UchybI)
     double u_ideal = get_m_SkladowaProporcjonalna() + get_m_SkladowaCalkowania()
                      + get_m_SkladowaRozniczkowania();
 
-    wartosc_pNas = u_ideal;
+    wartosc_przed_nasyceniem = u_ideal;
 
     double u_sat = u_ideal;
 
-    if (m_czyWindup) {
-        if (u_sat > m_UkladMax)
-            u_sat = m_UkladMax;
-        if (u_sat < m_UkladMin)
-            u_sat = m_UkladMin;
+    if (czyWindup) {
+        if (u_sat > sterowanieMax)
+            u_sat = sterowanieMax;
+        if (u_sat < sterowanieMin)
+            u_sat = sterowanieMin;
     }
 
     set_m_WartoscSterowania(u_sat);
@@ -296,5 +291,5 @@ RegulatorPID::RegulatorPID(double wzmocnienie)
 
 void RegulatorPID::set_m_czyWindup(bool czy)
 {
-    m_czyWindup = czy;
+    czyWindup = czy;
 }
