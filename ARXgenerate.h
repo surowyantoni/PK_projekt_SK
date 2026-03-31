@@ -9,11 +9,11 @@ using namespace std;
 class ARXgenerate
 {
 private:
-    vector<double> A, B; //wspolczynniki wektorow A i B
-    int k = 1; // Opoznienie transportowe
-    double z = 0; // Wartosc srodkowa zaklocen
-    deque<double> U; // Sygnal wejsciowy
-    deque<double> Y; // Sygnal wyjsciowy
+    vector<double> A, B;      //wspolczynniki wektorow A i B
+    int k = 1;                // Opoznienie transportowe
+    double z = 0;             // Wartosc srodkowa zaklocen
+    deque<double> U;          // Sygnal wejsciowy
+    deque<double> Y;          // Sygnal wyjsciowy
     deque<double> Uopozniony; // Opozniony sygnal sejsciowy
     bool ograniczenia = true; //czy włączone są ograniczenia wartości
     double maxZad = 10, minZad = -10;
@@ -21,9 +21,11 @@ private:
     void aktualizacjaBuforowPoZmianieOpoznienia();
 
 public:
-
     //konstruktory
-    ARXgenerate(vector<double> nA = {0}, vector<double> nB = {0}, int nk = 1, double nz = 0); //nz=warto�� zak��cenia
+    ARXgenerate(vector<double> nA = {0},
+                vector<double> nB = {0},
+                int nk = 1,
+                double nz = 0); //nz=warto�� zak��cenia
 
     //gettery
     const vector<double> &getA() const;

@@ -4,8 +4,7 @@
 class GenW
 {
 public:
-    enum Typ
-    {
+    enum Typ {
         KWADRAT = 0,
         SINUS = 1,
     };
@@ -19,11 +18,10 @@ public:
     double generuj();
     QJsonObject toJSON();
 
-
 private:
     int czasTaktowania, czasRzeczywisty;
     double amplituda, skladowaStala;
-    Typ typSygnalu;                               //0-kwadrat; 1-sinus
-    double wypelnienie;                                  //wype³nienie
-    int krok;                                     //numer kroku
+    Typ typSygnalu;     //0-kwadrat; 1-sinus
+    double wypelnienie; //wype³nienie
+    int krok;           //numer kroku
 };

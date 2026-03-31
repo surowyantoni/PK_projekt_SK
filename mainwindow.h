@@ -48,6 +48,15 @@ public:
 
     ~MainWindow();
 
+public slots:
+    void onSampleReceived(double u, double y, quint32 k);
+    void onPidUpdated(double p, double i, double d, int mode, double min, double max);
+    void onGenUpdated(int type, double amp, double per, double off, double duty);
+    void onArxUpdated(const QVector<double>& A, const QVector<double>& B, int k, double sigma, double minU, double maxU, double minY, double maxY);
+
+    // Metoda sterująca blokadami
+    void applyNetworkRole(bool isRegulator);
+
 private slots:
     void on_ZapiszRegulatory_clicked();
     void on_StartStop_clicked();
@@ -68,14 +77,6 @@ private slots:
     void on_actionOtworz_triggered();
 
     void on_actionPolacz_triggered();
-
-    void onSampleReceived(double u, double y, quint32 k);
-    void onPidUpdated(double p, double i, double d, int mode, double min, double max);
-    void onGenUpdated(int type, double amp, double per, double off, double duty);
-    void onArxUpdated(const QVector<double>& A, const QVector<double>& B, int k, double sigma, double minU, double maxU, double minY, double maxY);
-
-    // Metoda sterująca blokadami
-    void applyNetworkRole(bool isRegulator);
 
 private:
     Ui::MainWindow *ui;

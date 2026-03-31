@@ -176,10 +176,10 @@ QJsonObject ARXgenerate::toJSON()
     arx["k"] = k;
     arx["z"] = z;
     arx["A"] = QJsonArray();
-    for(auto& el : A)
+    for (auto &el : A)
         arx["A"].toArray().append(el);
     arx["B"] = QJsonArray();
-    for(auto& el : A)
+    for (auto &el : A)
         arx["B"].toArray().append(el);
     arx["wej"] = QJsonObject();
     arx["wej"].toObject().insert("min", minZad);

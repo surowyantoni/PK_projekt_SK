@@ -166,8 +166,21 @@ void NetService::processIncomingData(int id, QByteArray data)
         {
             m_packetCounter++;
             double p, i, d, min, max; int mode;
-            in >> p >> i >> d >> mode >> min >> max;
-            emit pidUpdated(p, i, d, mode, min, max); // GUI aktualizuje kontrolki [10]
+            QByteArray data; in >> data;
+            QDataStream params(&data, QIODevice::ReadOnly);
+            params >> p >> i >> d >> mode >> min >> max;
+            QString bitString;
+            for (char byte : data) {
+                // Convert each byte to an unsigned integer
+                unsigned char ubyte = static_cast<unsigned char>(byte);
+                // Loop through each bit (MSB first)
+                for (int i = 7; i >= 0; --i) {
+                    bitString.append(((ubyte >> i) & 1) ? '1' : '0');
+                }
+            }
+            qDebug() << bitString;
+            qDebug() << "P: " << p << "I: " << i << "D: " << d;
+            emit pidUpdated(p, i, d, mode, min, max); // GUI aktualizuje kontrolki
             break;
         }
         case CONFIG_GEN:

@@ -158,6 +158,7 @@ MainWindow::MainWindow(QWidget *parent)
     graph3->addData(0, 0);
     graph4->addData(0, 0);
     graph5->addData(0, 0);
+
 }
 
 MainWindow::~MainWindow()
@@ -570,7 +571,9 @@ void MainWindow::on_actionPolacz_triggered()
                 {
                     connWindow = nullptr;
                 });
+        connect(service, &NetService::pidUpdated, this, &MainWindow::onPidUpdated);
     }
+
 
     connWindow->show();
     connWindow->setWindowState(Qt::WindowNoState);
@@ -818,7 +821,6 @@ void MainWindow::onPidUpdated(double p, double i, double d, int mode, double min
         ui->pidWewn->click();
     else
         ui->pidZewn->click();
-
     ui->wzmocnienieP->setValue(p);
     ui->stalaCalkowa->setValue(i);
     ui->stalaRozniczkowa->setValue(d);

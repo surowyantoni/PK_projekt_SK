@@ -51,15 +51,13 @@ double GenW::generuj()
     double tempSin;
 
     w = skladowaStala;
-    if (typSygnalu == Typ::SINUS)
-    { //sinus
+    if (typSygnalu == Typ::SINUS) { //sinus
         tempSin = krok % cykli_na_okres;
         tempSin /= cykli_na_okres;
         tempSin *= 2 * M_PI; // zamiana na radiany
 
         w += amplituda * std::sin(tempSin);
-    } else
-    { //kwadrat
+    } else { //kwadrat
         if (krok % cykli_na_okres < wypelnienie * cykli_na_okres)
             w += amplituda;
     }
@@ -72,7 +70,7 @@ double GenW::generuj()
 QJsonObject GenW::toJSON()
 {
     QJsonObject generator;
-    generator["typ"] = (int)this->typSygnalu;
+    generator["typ"] = (int) this->typSygnalu;
     generator["wypelnienie"] = this->wypelnienie;
     generator["skladowaStala"] = this->skladowaStala;
     generator["amplituda"] = this->amplituda;
