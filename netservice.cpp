@@ -245,6 +245,7 @@ void NetService::verifyCode(QString inputCode)
     }
 }
 
+
 void NetService::sendBinaryPacket(quint8 type, const QByteArray &data) {
     QByteArray package;
     QDataStream out(&package, QIODevice::WriteOnly);
@@ -272,6 +273,19 @@ void NetService::sendPidConfig(double p, double i, double d, int mode, double mi
     QDataStream out(&data, QIODevice::WriteOnly);
     out << p << i << d << mode << min << max;
     sendBinaryPacket(CONFIG_PID, data);
+    QString bitString;
+    for (char byte : data) {
+        // Convert each byte to an unsigned integer
+        unsigned char ubyte = static_cast<unsigned char>(byte);
+        // Loop through each bit (MSB first)
+        for (int i = 7; i >= 0; --i) {
+            bitString.append(((ubyte >> i) & 1) ? '1' : '0');
+        }
+    }
+    qDebug() << bitString;
+    qDebug() << "P: " << p << "I: " << i << "D: " << d;
+
+    QDataStream in(&data, QIODevice::ReadOnly);
 }
 
 // SYNCHRONIZACJA GENERATORA
