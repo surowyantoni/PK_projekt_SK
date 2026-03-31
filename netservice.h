@@ -10,6 +10,8 @@ class NetService : public QObject
 {
     Q_OBJECT
 public:
+    bool isServer();
+
     explicit NetService(QObject *parent = nullptr);
 
     void startAsServer(int port);                               //Startuj jako serwer

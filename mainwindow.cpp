@@ -365,8 +365,9 @@ void MainWindow::on_ZapiszRegulatory_clicked()
 
         m_uslugi.set_m_pid();
         m_uslugi.setPID();
-        if(service != nullptr)
-            service->sendPidConfig(readWzmocnienie(), readStalaCalkowania(), readStalaRozniczkowania(), readSposobLiczeniaPID(), 0.0, 0.0);
+        if(service != nullptr && service->isServer())
+            service->sendPidConfig(readWzmocnienie(), readStalaCalkowania(),
+                                   readStalaRozniczkowania(), readSposobLiczeniaPID(), 0.0, 0.0);
     }
 
     if (readONOFFCheckBox()) {

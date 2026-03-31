@@ -169,19 +169,19 @@ void NetService::processIncomingData(int id, QByteArray data)
             QByteArray data; in >> data;
             QDataStream params(&data, QIODevice::ReadOnly);
             params >> p >> i >> d >> mode >> min >> max;
-            QString bitString;
-            for (char byte : data) {
-                // Convert each byte to an unsigned integer
-                unsigned char ubyte = static_cast<unsigned char>(byte);
-                // Loop through each bit (MSB first)
-                for (int i = 7; i >= 0; --i) {
-                    bitString.append(((ubyte >> i) & 1) ? '1' : '0');
-                }
-            }
-            qDebug() << bitString;
-            qDebug() << "P: " << p << "I: " << i << "D: " << d;
             emit pidUpdated(p, i, d, mode, min, max); // GUI aktualizuje kontrolki
             break;
+            // QString bitString;
+            // for (char byte : data) {
+            //     // Convert each byte to an unsigned integer
+            //     unsigned char ubyte = static_cast<unsigned char>(byte);
+            //     // Loop through each bit (MSB first)
+            //     for (int i = 7; i >= 0; --i) {
+            //         bitString.append(((ubyte >> i) & 1) ? '1' : '0');
+            //     }
+            // }
+            // qDebug() << bitString;
+            // qDebug() << "P: " << p << "I: " << i << "D: " << d;
         }
         case CONFIG_GEN:
         {
@@ -286,19 +286,17 @@ void NetService::sendPidConfig(double p, double i, double d, int mode, double mi
     QDataStream out(&data, QIODevice::WriteOnly);
     out << p << i << d << mode << min << max;
     sendBinaryPacket(CONFIG_PID, data);
-    QString bitString;
-    for (char byte : data) {
-        // Convert each byte to an unsigned integer
-        unsigned char ubyte = static_cast<unsigned char>(byte);
-        // Loop through each bit (MSB first)
-        for (int i = 7; i >= 0; --i) {
-            bitString.append(((ubyte >> i) & 1) ? '1' : '0');
-        }
-    }
-    qDebug() << bitString;
-    qDebug() << "P: " << p << "I: " << i << "D: " << d;
-
-    QDataStream in(&data, QIODevice::ReadOnly);
+    // QString bitString;
+    // for (char byte : data) {
+    //     // Convert each byte to an unsigned integer
+    //     unsigned char ubyte = static_cast<unsigned char>(byte);
+    //     // Loop through each bit (MSB first)
+    //     for (int i = 7; i >= 0; --i) {
+    //         bitString.append(((ubyte >> i) & 1) ? '1' : '0');
+    //     }
+    // }
+    // qDebug() << bitString;
+    // qDebug() << "P: " << p << "I: " << i << "D: " << d;
 }
 
 // SYNCHRONIZACJA GENERATORA
@@ -322,4 +320,9 @@ void NetService::handleDisconnection()
 {
     emit logAppend("BŁĄD! Połączenie zerwane! Powrót do trybu stacjonarnego.");
     emit updateStatus(false, "");
+}
+
+bool NetService::isServer()
+{
+    return server != nullptr;
 }
