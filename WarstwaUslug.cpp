@@ -148,7 +148,7 @@ void WarstaUslug::set_m_stan(bool stan)
 void WarstaUslug::set_m_onOff()
 {
     m_onOff = RegulatorOnOff(m_uON, m_h);
-    m_onOff.Reset();
+    m_onOff.reset();
 }
 
 void WarstaUslug::setPID()
@@ -216,7 +216,7 @@ WarstaUslug::~WarstaUslug()
 double WarstaUslug::getUchyb()
 {
     if (m_uar.get_choice()) {
-        return m_onOff.get_wartoscSterowania() - getWartoscRegulowana();
+        return m_onOff.getWartoscSterowania() - getWartoscRegulowana();
     } else {
         return m_pid.get_m_Uchyb();
     }
@@ -237,7 +237,7 @@ double WarstaUslug::getWartoscSterowania()
     if (!m_uar.get_choice()) {
         return m_pid.get_m_WartoscSterowania();
     } else {
-        return m_onOff.get_wartoscSterowania();
+        return m_onOff.getWartoscSterowania();
     }
 }
 

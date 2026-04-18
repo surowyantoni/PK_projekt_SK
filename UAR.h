@@ -16,6 +16,7 @@ private:
     double nasycenieMin;
 
 public:
+    enum class RodzajSterowania { OnOff, PID };
     UAR(ARXgenerate &zARX, RegulatorPID &zPID);
     UAR(ARXgenerate &zARX, RegulatorOnOff &zOnOff);
 

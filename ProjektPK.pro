@@ -19,6 +19,7 @@ SOURCES += \
     connectionwindow.cpp \
     main.cpp \
     mainwindow.cpp \
+    minmaxclamp.cpp \
     netservice.cpp \
     parametryarx.cpp \
     qcustomplot.cpp \
@@ -37,6 +38,7 @@ HEADERS += \
     client.h \
     connectionwindow.h \
     mainwindow.h \
+    minmaxclamp.hpp \
     netservice.h \
     parametryarx.h \
     qcustomplot.h \

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "minmaxclamp.hpp"
 #include "qjsonobject.h"
 #include <deque>
 #include <vector>
@@ -16,8 +17,8 @@ private:
     deque<double> Y;          // Sygnal wyjsciowy
     deque<double> Uopozniony; // Opozniony sygnal sejsciowy
     bool ograniczenia = true; //czy włączone są ograniczenia wartości
-    double maxZad = 10, minZad = -10;
-    double maxReg = 10, minReg = -10;
+    MinMaxClamp limityZadana;
+    MinMaxClamp limityRegulowana;
     void aktualizacjaBuforowPoZmianieOpoznienia();
 
 public:

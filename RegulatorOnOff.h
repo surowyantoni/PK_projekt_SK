@@ -2,17 +2,17 @@
 
 class RegulatorOnOff
 {
-private:
-    double h;
-    double uON; //
-    bool stan;
+    enum class Stan {Off, On};
+
+
+    double histereza;
+    Stan stan;
     double wartoscSterowania;
 
 public:
-    RegulatorOnOff();
-    RegulatorOnOff(double u_on, double histereza);
+    RegulatorOnOff(double wartoscSterowania = 1.0, double histereza = 0.001);
     double symuluj(double e);
-    double get_wartoscSterowania();
-    void set_wartoscSterowania(double wartoscS);
-    void Reset();
+    double getWartoscSterowania();
+    void setWartoscSterowania(double wartoscSterowania);
+    void reset();
 };

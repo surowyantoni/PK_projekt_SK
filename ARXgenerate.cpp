@@ -3,11 +3,19 @@
 
 //konstruktory
 ARXgenerate::ARXgenerate(vector<double> nA, vector<double> nB, int nk, double nz)
+    :
+    limityZadana(MinMaxClamp(-10.0, 10.0)),
+    limityRegulowana(MinMaxClamp(-10.0, 10.0))
 {
     A = nA;
     B = nB;
     k = nk;
     z = nz;
+    Uopozniony.resize(k);
+    U.resize(B.size());
+    Y.resize(A.size());
+
+
     for (int i = 0; i < k; i++) {
         Uopozniony.push_back(0);
     }
@@ -79,20 +87,20 @@ void ARXgenerate::setB(vector<double> b)
 //settery ograniczenia wartoœci zadanej
 void ARXgenerate::setMaxWejscia(double smax)
 {
-    maxZad = smax;
+    limityZadana.setMax(smax);
 }
 void ARXgenerate::setMinWejscia(double smin)
 {
-    minZad = smin;
+    limityZadana.setMin(smin);
 }
 //settery ograniczenia wartoœci wyjsciowej
 void ARXgenerate::setMaxWyjscia(double smax)
 {
-    maxReg = smax;
+    limityRegulowana.setMax(smax);
 }
 void ARXgenerate::setMinWyjscia(double smin)
 {
-    minReg = smin;
+    limityRegulowana.setMin(smin);
 }
 void ARXgenerate::setOgraniczenie(bool enabled)
 {
@@ -106,16 +114,9 @@ double ARXgenerate::symuluj(double u)
 
     U.pop_front();
     U.push_back(Uopozniony.front());
-    if (!ograniczenia) {
-        if (u > maxZad)
-            Uopozniony.push_back(maxZad);
-        else if (u < minZad)
-            Uopozniony.push_back(minZad);
-        else
-            Uopozniony.push_back(u);
-    } else {
-        Uopozniony.push_back(u);
-    }
+    if (ograniczenia)
+        u = limityZadana.clamp(u);
+    Uopozniony.push_back(u);
     Uopozniony.pop_front();
 
     double b = 0, a = 0, y = 0;
@@ -127,16 +128,9 @@ double ARXgenerate::symuluj(double u)
         a += A.at(i) * Y.at(size - i); // Mnożenie wektora A przez historię wyjść Y
     }
     y = b - a + z;
-    if (!ograniczenia) {
-        if (y > maxReg)
-            Y.push_back(maxReg);
-        else if (y < minReg)
-            Y.push_back(minReg);
-        else
-            Y.push_back(y);
-    } else {
-        Y.push_back(y);
-    }
+    if (ograniczenia)
+        y = limityRegulowana.clamp(y);
+    Y.push_back(y);
     Y.pop_front();
     //y=Y.at(Y.front());
 
@@ -182,11 +176,11 @@ QJsonObject ARXgenerate::toJSON()
     for (auto &el : A)
         arx["B"].toArray().append(el);
     arx["wej"] = QJsonObject();
-    arx["wej"].toObject().insert("min", minZad);
-    arx["wej"].toObject().insert("max", maxZad);
+    arx["wej"].toObject().insert("min", limityZadana.getMin());
+    arx["wej"].toObject().insert("max", limityZadana.getMax());
     arx["wyj"] = QJsonObject();
-    arx["wyj"].toObject().insert("min", minReg);
-    arx["wyj"].toObject().insert("max", maxReg);
+    arx["wyj"].toObject().insert("min", limityRegulowana.getMin());
+    arx["wyj"].toObject().insert("max", limityRegulowana.getMax());
     arx["ogranicznia"] = ograniczenia;
     return arx;
 }

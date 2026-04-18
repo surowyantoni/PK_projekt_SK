@@ -39,7 +39,6 @@ double UAR::Symuluj(double sygWe)
     if (choice == 0) {
         wW = PID->Symuluj(sygWe - y1);
         y1 = ARX.symuluj(wW);
-        //cout << y1<<" ";
         if (czyNasycenie) {
             if (y1 > nasycenieMax)
                 y1 = nasycenieMax;
