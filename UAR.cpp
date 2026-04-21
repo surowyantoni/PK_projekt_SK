@@ -1,80 +1,78 @@
 #include "UAR.h"
 
-UAR::UAR(ARXgenerate &zARX, RegulatorPID &zPID)
-    : ARX(zARX)
-    , PID(&zPID)
-    , OnOff(nullptr)
-    , wW(0)
-    , u(0)
-    , y1(0)
-    , choice(0)
-{}
-
-UAR::UAR(ARXgenerate &zARX, RegulatorOnOff &zOnOff)
-    : ARX(zARX)
-    , PID(nullptr)
-    , OnOff(&zOnOff)
-    , wW(0)
-    , u(0)
-    , y1(0)
-    , choice(1)
-{}
-
-void UAR::setPID(RegulatorPID &zPID)
+UAR::UAR(class ARX *ARX, GeneratorWartosci* gen, RegulatorPID *PID)
+    : ARX(ARX)
+    , gen(gen)
+    , poprzednieWyjscie(0.0)
 {
-    PID = &zPID;
+    setPID(PID);
+}
+
+UAR::UAR(class ARX *ARX, GeneratorWartosci* gen, RegulatorOnOff *OnOff)
+    : ARX(ARX)
+    , gen(gen)
+    , poprzednieWyjscie(0.0)
+{
+    setOnOff(OnOff);
+}
+
+void UAR::setPID(RegulatorPID* PID)
+{
+    this->PID = PID;
     OnOff = nullptr;
-    choice = 0;
 }
 
-void UAR::setOnOff(RegulatorOnOff &zOnOff)
+void UAR::setOnOff(RegulatorOnOff* OnOff)
 {
+    this->OnOff = OnOff;
     PID = nullptr;
-    OnOff = &zOnOff;
-    choice = 1;
 }
 
-double UAR::Symuluj(double sygWe)
+double UAR::symuluj(double wartoscZadana)
 {
-    if (choice == 0) {
-        wW = PID->Symuluj(sygWe - y1);
-        y1 = ARX.symuluj(wW);
-        if (czyNasycenie) {
-            if (y1 > nasycenieMax)
-                y1 = nasycenieMax;
-            else if (y1 < nasycenieMin)
-                y1 = nasycenieMin;
-        }
-    } else if (choice == 1) {
-        wW = OnOff->symuluj(sygWe - y1);
-        y1 = ARX.symuluj(wW);
-        //cout << y1<<" ";
-        if (czyNasycenie) {
-            if (czyNasycenie) {
-                if (y1 > nasycenieMax)
-                    y1 = nasycenieMax;
-                else if (y1 < nasycenieMin)
-                    y1 = nasycenieMin;
-            }
-        }
+    switch (getWybranyRegulator())
+    {
+    case RodzajSterowania::PID:
+        wartoscZadana = PID->symuluj(wartoscZadana - poprzednieWyjscie);
+        break;
+    case RodzajSterowania::OnOff:
+        wartoscZadana = OnOff->symuluj(wartoscZadana - poprzednieWyjscie);
+        break;
     }
-    return y1;
+    poprzednieWyjscie = ARX->symuluj(wartoscZadana);
+
+    return poprzednieWyjscie;
 }
 
-bool UAR::get_choice()
+UAR::Tick UAR::symuluj()
 {
-    return choice;
+    Tick tick;
+    double wartoscZadana = gen->generuj();
+    tick.wartoscZadana = wartoscZadana;
+
+    tick.uchyb = wartoscZadana - poprzednieWyjscie;
+
+    switch (getWybranyRegulator())
+    {
+    case RodzajSterowania::PID:
+        tick.pid = PID->symuluj(tick.uchyb);
+        tick.sterowanie = tick.pid.value();
+        break;
+    case RodzajSterowania::OnOff:
+        tick.sterowanie = OnOff->symuluj(tick.uchyb);
+        break;
+    }
+
+    poprzednieWyjscie = ARX->symuluj(wartoscZadana);
+    tick.wartoscRegulowana = poprzednieWyjscie;
+    return tick;
 }
 
-void UAR::setCzynasycenie(bool czy)
+UAR::RodzajSterowania UAR::getWybranyRegulator()
 {
-    czyNasycenie = czy;
-}
-void UAR::setNasycenieMax(double max)
-{
-    nasycenieMax = max;
-}
-void UAR::setNasycenieMin(double min)
-{
-    nasycenieMin = min;
+    if(PID != nullptr)
+        return UAR::RodzajSterowania::PID;
+    else if(OnOff != nullptr)
+        return UAR::RodzajSterowania::OnOff;
+    throw "Mamy problemik";
 }

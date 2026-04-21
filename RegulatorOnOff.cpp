@@ -1,43 +1,29 @@
 #include "RegulatorOnOff.h"
 
 
-RegulatorOnOff::RegulatorOnOff(double u_on, double histereza)
+RegulatorOnOff::RegulatorOnOff(double wartoscSterowania, double histereza)
+    : stan(Stan::Off)
+    , histereza(histereza)
+    , wartoscSterowania(wartoscSterowania)
 {
-    if (histereza <= 0)
-        this->histereza = 0.0001;
-    else
-        this->histereza = histereza;
-
-    wartoscSterowania = u_on;
-    stan = Stan::Off;
 }
 
-double RegulatorOnOff::symuluj(double e)
+double RegulatorOnOff::symuluj(double uchyb)
 {
-    // Wtedy w��czamy regulator (stan = ON)
-    if (stan == Stan::Off && e > histereza) {
+    if (stan == Stan::Off && uchyb > histereza)
         stan = Stan::On;
-    }
-    //wy��czamy regulator (stan = OFF)
-    else if (stan == Stan::On && e < -histereza) {
+    else if (stan == Stan::On && uchyb < -histereza)
         stan = Stan::Off;
-    }
-    // Je�li regulator jest w stanie ON, wyj�cie = uON,
-    if (stan == Stan::On) {
-        return wartoscSterowania;
-    } else {
+
+    switch (stan)
+    {
+    case Stan::Off:
         return 0.0;
+        break;
+    case Stan::On:
+        return wartoscSterowania;
+        break;
     }
-}
-
-double RegulatorOnOff::getWartoscSterowania()
-{
-    return wartoscSterowania;
-}
-
-void RegulatorOnOff::setWartoscSterowania(double wartoscS)
-{
-    wartoscSterowania = wartoscS;
 }
 
 void RegulatorOnOff::reset()

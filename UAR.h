@@ -1,30 +1,33 @@
 ﻿#pragma once
-#include "ARXgenerate.h"
+#include "ARX.hpp"
+#include "GeneratorWartosci.h"
 #include "RegulatorOnOff.h"
 #include "RegulatorPID.h"
 
 class UAR
 {
-private:
-    ARXgenerate &ARX;
-    RegulatorPID *PID;
-    RegulatorOnOff *OnOff;
-    double wW, y1, u; //wW-wartość zadana, y1-y w chwili -1, u-wartość zadana???
-    bool choice;      //przełącznik między symulacją OnOff a PID
-    bool czyNasycenie = false;
-    double nasycenieMax;
-    double nasycenieMin;
-
 public:
+    struct Tick
+    {
+        std::optional<PIDTick> pid;
+        double sterowanie;
+        double uchyb;
+        double wartoscRegulowana;
+        double wartoscZadana;
+    };
     enum class RodzajSterowania { OnOff, PID };
-    UAR(ARXgenerate &zARX, RegulatorPID &zPID);
-    UAR(ARXgenerate &zARX, RegulatorOnOff &zOnOff);
+    UAR(ARX* ARX, GeneratorWartosci* gen, RegulatorPID* PID);
+    UAR(ARX* ARX, GeneratorWartosci* gen, RegulatorOnOff* OnOff);
 
-    void setPID(RegulatorPID &zPID);
-    void setOnOff(RegulatorOnOff &zOnOff);
-    void setCzynasycenie(bool czy);
-    void setNasycenieMax(double max);
-    void setNasycenieMin(double min);
-    bool get_choice();
-    double Symuluj(double sygWe);
+    void setPID(RegulatorPID* PID);
+    void setOnOff(RegulatorOnOff* OnOff);
+    RodzajSterowania getWybranyRegulator();
+    Tick symuluj();
+    double symuluj(double wartZadana); // TYLKO do pisania testów
+private:
+    ARX* ARX;
+    RegulatorPID* PID;
+    RegulatorOnOff* OnOff;
+    GeneratorWartosci* gen;
+    double poprzednieWyjscie;
 };

@@ -1,18 +1,27 @@
 #pragma once
+#include "utils.hpp"
+#include <cassert>
 
 class RegulatorOnOff
 {
     enum class Stan {Off, On};
-
-
-    double histereza;
     Stan stan;
-    double wartoscSterowania;
-
 public:
+    PROPERTY(double, HisterezaRegulatora)
+        void set(const double& value)
+        {
+            assert(value > 0.0);
+            if (value <= 0)
+                this->value = 0.0001;
+            else
+                this->value = value;
+        }
+    } histereza;
+
+    PROPERTY(double, WartoscSterowaniaRegulatoraUON)
+    } wartoscSterowania;
+
     RegulatorOnOff(double wartoscSterowania = 1.0, double histereza = 0.001);
-    double symuluj(double e);
-    double getWartoscSterowania();
-    void setWartoscSterowania(double wartoscSterowania);
+    double symuluj(double uchyb);
     void reset();
 };

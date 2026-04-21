@@ -1,74 +1,84 @@
 #pragma once
+#include "utils.hpp"
+#include <cassert>
+
+struct PIDTick
+{
+    double P;
+    double I;
+    double D;
+
+    operator double() const noexcept;
+};
 
 class RegulatorPID
 {
 public:
     enum SposobLiczeniaCalki { Zewnetrzne = 0, Wewnetrzne = 1 };
 
+
+    PROPERTY_ACCESS(double, MaximumAntiWindup)
+    void set(const double& value)
+    {
+        double min = static_cast<RegulatorPID*>(owner)->antiWindupMin;
+        assert(value >= min);
+        this->value = value;
+    }
+    } antiWindupMax;
+
+    PROPERTY_ACCESS(double, MinimumAntiWindup)
+        void set(const double& value)
+        {
+            double max = static_cast<RegulatorPID*>(owner)->antiWindupMax;
+            assert(value <= max);
+            this->value = value;
+        }
+    } antiWindupMin;
+    PROPERTY(double, WspolczynnikAntiWindup)
+    } antiWindupWspolczynnik;
+    PROPERTY(bool, AntiWindup)
+    } antiWindupActive;
+    PROPERTY(double, WspolczynnikiProporcjonalny)
+        void set(const double& value)
+        {
+            assert(value >= 0.0);
+            this->value = value;
+        }
+    } k;
+    PROPERTY(double, WspolczynnikiCalkowania)
+        void set(const double& value)
+        {
+            assert(value >= 0.0);
+            this->value = value;
+        }
+    } Ti;
+    PROPERTY(double, WspolczynnikiRozniczkowania)
+        void set(const double& value)
+        {
+            assert(value >= 0.0);
+            this->value = value;
+        }
+    } Td;
+
+    PROPERTY_ACCESS(SposobLiczeniaCalki, jakLiczymyCzescCalkujaca)
+        void set(const SposobLiczeniaCalki& value)
+        {
+            static_cast<RegulatorPID*>(owner)->zmienSposobLiczeniaCalki(value);
+            this->value = value;
+        }
+    } sposobLiczeniaCalki;
+
+
+    RegulatorPID(double k = 0.5, double Ti = 0.4, double Td = 0.1,
+                double antiWindup = 0.5, double antiWindupMin = -5.0, double antiWindupMax = 5.0,
+                bool antiWindupActive = true);
+    PIDTick symuluj(double uchyb);
+    void reset();
+    void resetCzesciCalkujacej();
+
 private:
-    double wartosc_przed_nasyceniem;
-    double sterowanieMax = 5.0;  // górna granica sterowania
-    double sterowanieMin = -5.0; // dolna granica sterowania
-    double anitWindup = 0.1;       // współczynnik anti-windup
-    bool czyWindup = false;
-
-    double m_Uchyb;
-
-    double m_SkladowaProporcjonalna;
-    double m_SkladowaCalkowania;
-    double m_SkladowaRozniczkowania;
-    double m_WartoscSterowania;
-
-    double m_Wzmocnienie;
-    double m_StalaCalkowania;
-    double m_StalaRozniczkowania;
-
-    double m_UchybPoprzedni;
-    double m_SumaUchybuOdPoczatku;
-
+    void zmienSposobLiczeniaCalki(SposobLiczeniaCalki value);
+    double poprzedniUchyb;
     double sumaUchybowCalkowanieZewnetrzne;
     double sumaUchybowCalkowanieWewnetrzne;
-
-    SposobLiczeniaCalki m_AktualnySposobLiczeniaCalki;  // 0 - zew, 1 - wew
-    SposobLiczeniaCalki m_PoprzedniSposobLiczeniaCalki; // 0 - zew, 1 - wew
-
-    void Oblicz_m_SkladowaProporcjonalna();
-    void Oblicz_m_SkladowaCalkowania();
-    void Oblicz_m_SkladowaRozniczkowania();
-
-public:
-    void Zmiana_m_SposobLiczeniaCalki(SposobLiczeniaCalki sposobLiczeniaCalki);
-    double Symuluj(double UchybI);
-    void set_m_StalaCalkowania(double Stala);
-    void Reset();
-    RegulatorPID();
-    RegulatorPID(double wzmocnienie, double stalaCalkowania, double stalaRozniczkowania);
-    RegulatorPID(double Wzmocnienie);
-    RegulatorPID(double Wzmocnienie, double StalaC);
-    void ResetCalkowania();
-
-    void set_m_SkladowaProporcjonalna(double SkladowaP);
-    void set_m_SkladowaCalkowania(double SkladowaC);
-    void set_m_SkladowaRozniczkowania(double SkladowaR);
-    void set_m_WartoscSterowania(double WartoscS);
-    void set_m_Wzmocnienie(double Wzmocnienie);
-
-    void set_m_StalaRozniczkowania(double StalaR);
-    void set_m_SumaUchybuOdPoczatku(double SumaUchybuOdPoczatku);
-    void set_m_Uchyb(double Uchyb);
-    void set_m_UchybPoprzedni(double UchybP);
-    void set_m_czyWindup(bool czy);
-
-    void set_m_SposobLiczeniaCalki(SposobLiczeniaCalki sposobLiczeniaCalki);
-
-    double get_m_SkladowaProporcjonalna();
-    double get_m_SkladowaCalkowania();
-    double get_m_SkladowaRozniczkowania();
-    double get_m_WartoscSterowania();
-    double get_m_Wzmocnienie();
-    double get_m_StalaCalkowania();
-    double get_m_StalaRozniczkowania();
-    double get_m_SumaUchybuOdPoczatku();
-    double get_m_Uchyb();
-    double get_m_UchybPoprzedni();
 };
