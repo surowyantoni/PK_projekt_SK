@@ -73,7 +73,8 @@ public:
     name(type&& value)\
     : Property<type>(value) {}\
     void operator=(const type&& value) { set(value); }\
-    operator type() const { return get(); }
+    operator type() const { return get(); }\
+    type& use() { return value; }\
 
 
 #define PROPERTY_ACCESS(type, name) \
@@ -84,7 +85,8 @@ struct name : public PropertyWithAccess<type>\
     name(void* owner, type&& value)\
     : PropertyWithAccess<type>(owner, value) {}\
     void operator=(const type&& value) { set(value); }\
-    operator type() const { return get(); }
+    operator type() const { return get(); }\
+    type& use() { return value; }
 
 
 // USAGE
@@ -108,8 +110,14 @@ struct name : public PropertyWithAccess<type>\
 //     } speed;
 // };
 
-inline uint32_t secondsToMili(double seconds);
-inline double miliToSeconds(uint32_t miliseconds);
+inline uint32_t secondsToMili(double seconds)
+{
+    return seconds * 1000;
+}
+inline double miliToSeconds(uint32_t miliseconds)
+{
+    return (double)miliseconds / 1000.0;
+}
 
 
 #endif // UTILS_H

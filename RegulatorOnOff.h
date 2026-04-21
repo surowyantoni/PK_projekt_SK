@@ -21,7 +21,7 @@ public:
     PROPERTY(double, WartoscSterowaniaRegulatoraUON)
     } wartoscSterowania;
 
-    RegulatorOnOff(double wartoscSterowania = 1.0, double histereza = 0.001);
+    RegulatorOnOff(double wartoscSterowania = 2.0, double histereza = 0.1);
     double symuluj(double uchyb);
     void reset();
 };

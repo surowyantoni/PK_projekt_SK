@@ -2,7 +2,7 @@ QT       += core gui charts network
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets printsupport
 
-CONFIG += c++17
+CONFIG += c++20
 
 # You can make your code fail to compile if it uses deprecated APIs.
 # In order to do so, uncomment the following line.
@@ -11,8 +11,10 @@ CONFIG += c++17
 SOURCES += \
     ARX.cpp \
     GeneratorWartosci.cpp \
+    ListWithWxtremes.cpp \
     RegulatorOnOff.cpp \
     RegulatorPID.cpp \
+    TESTY_UAR_PK.cpp \
     UAR.cpp \
     WarstwaUslug.cpp \
     client.cpp \
@@ -21,14 +23,17 @@ SOURCES += \
     mainwindow.cpp \
     netservice.cpp \
     parametryarx.cpp \
+    plot.cpp \
     qcustomplot.cpp \
     server.cpp \
     utils.cpp
 
 HEADERS += \
     ARX.hpp \
+    DEFINITIONS.hpp \
     GeneratorWartosci.h \
     GeneratorWartosci.h \
+    ListWithWxtremes.hpp \
     ProtocolDef.h \
     RegulatorOnOff.h \
     RegulatorPID.h \
@@ -40,6 +45,7 @@ HEADERS += \
     mainwindow.h \
     netservice.h \
     parametryarx.h \
+    plot.hpp \
     qcustomplot.h \
     server.h \
     utils.hpp

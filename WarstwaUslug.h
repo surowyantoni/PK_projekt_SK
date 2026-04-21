@@ -49,7 +49,8 @@ public:
     WarstaUslug();
 
     void reset();
-    void uzyjRegluatora(UAR::RodzajSterowania regulacja);
+    void Regulacja(UAR::RodzajSterowania regulacja);
+    UAR::RodzajSterowania Regulacja();
 signals:
     void updateCharts(UAR::Tick tick, uint32_t czas);
     void updateUI();

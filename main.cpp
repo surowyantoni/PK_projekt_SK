@@ -1,8 +1,9 @@
 #include "mainwindow.h"
 
 #include <QApplication>
-#include <utils.hpp>
+#include "DEFINITIONS.hpp"
 
+#ifdef MAIN
 
 int main(int argc, char *argv[])
 {
@@ -11,3 +12,6 @@ int main(int argc, char *argv[])
     w.showMaximized();
     return a.exec();
 }
+
+#endif
+

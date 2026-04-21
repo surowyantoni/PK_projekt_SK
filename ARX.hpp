@@ -5,7 +5,6 @@
 #include <deque>
 #include <vector>
 
-using namespace std;
 
 class ARX
 {
@@ -13,11 +12,15 @@ private:
     void aktualizacjaBuforowPoZmianieOpoznienia();
     double generujZaklocenie();
 public:
+    struct Wspolczynnik
+    {
+        double A;
+        double B;
+    };
     //konstruktory
-    ARX(vector<double> nA = {0},
-                vector<double> nB = {0},
-                int nk = 1,
-                double nz = 0);
+    ARX(std::vector<Wspolczynnik>&& wspolczynniki = {{-0.4, 0.6}},
+        int k = 1,
+        double z = 0.0);
     MinMaxClamp limityZadana;
     MinMaxClamp limityRegulowana;
 
@@ -34,31 +37,13 @@ public:
     PROPERTY(double, Zaklocenia)
     } z;
 
-    PROPERTY(deque<double>, Wejscie)
+    PROPERTY(std::deque<double>, Wejscie)
     } U;
-    PROPERTY(deque<double>, WyjscieOpoznione)
-    } Uopozniony;
-    PROPERTY(deque<double>, Wyjscie)
+    PROPERTY(std::deque<double>, Wyjscie)
     } Y;
 
-    PROPERTY_ACCESS(vector<double>, WspolczynnikiA)
-        void set(const vector<double>& wspolczynniki)
-        {
-            static_cast<ARX*>(owner)->Y.get().clear();
-            value = wspolczynniki;
-            for (size_t i = 0; i < value.size(); i++)
-                static_cast<ARX*>(owner)->Y.get().push_back(0.0);
-        }
-    } A;
-    PROPERTY_ACCESS(vector<double>, WspolczynnikiB)
-        void set(const vector<double>& wspolczynniki)
-        {
-            static_cast<ARX*>(owner)->U.get().clear();
-            value = wspolczynniki;
-            for (size_t i = 0; i < value.size(); i++)
-                static_cast<ARX*>(owner)->U.get().push_back(0.0);
-        }
-    } B;
+    PROPERTY(std::vector<Wspolczynnik>, WspolczynnikiObiektuARX)
+    } wspolczynniki;
 
     double symuluj(double u);
     void reset();

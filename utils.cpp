@@ -86,14 +86,3 @@ void MinMaxClamp::setMinMax(double min, double max)
 //     : Property<T>(initalValue)
 //     , owner(owner)
 // {}
-
-
-inline uint32_t secondsToMili(double seconds)
-{
-    return seconds * 1000;
-}
-
-inline double miliToSeconds(uint32_t miliseconds)
-{
-    return (double)miliseconds / 1000.0;
-}

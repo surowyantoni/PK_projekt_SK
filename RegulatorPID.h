@@ -16,26 +16,7 @@ class RegulatorPID
 public:
     enum SposobLiczeniaCalki { Zewnetrzne = 0, Wewnetrzne = 1 };
 
-
-    PROPERTY_ACCESS(double, MaximumAntiWindup)
-    void set(const double& value)
-    {
-        double min = static_cast<RegulatorPID*>(owner)->antiWindupMin;
-        assert(value >= min);
-        this->value = value;
-    }
-    } antiWindupMax;
-
-    PROPERTY_ACCESS(double, MinimumAntiWindup)
-        void set(const double& value)
-        {
-            double max = static_cast<RegulatorPID*>(owner)->antiWindupMax;
-            assert(value <= max);
-            this->value = value;
-        }
-    } antiWindupMin;
-    PROPERTY(double, WspolczynnikAntiWindup)
-    } antiWindupWspolczynnik;
+    MinMaxClamp limityWyjscia;
     PROPERTY(bool, AntiWindup)
     } antiWindupActive;
     PROPERTY(double, WspolczynnikiProporcjonalny)
@@ -69,9 +50,8 @@ public:
     } sposobLiczeniaCalki;
 
 
-    RegulatorPID(double k = 0.5, double Ti = 0.4, double Td = 0.1,
-                double antiWindup = 0.5, double antiWindupMin = -5.0, double antiWindupMax = 5.0,
-                bool antiWindupActive = true);
+    RegulatorPID(double k = 0.5, double Ti = 5.0, double Td = 0.0,
+                 MinMaxClamp ograniczenia = MinMaxClamp(-100.0, 100.0, true), bool antiWindupActive = true);
     PIDTick symuluj(double uchyb);
     void reset();
     void resetCzesciCalkujacej();

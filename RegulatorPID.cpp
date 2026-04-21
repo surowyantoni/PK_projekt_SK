@@ -1,4 +1,7 @@
 #include "RegulatorPID.h"
+#include "qdebug.h"
+#include "qglobal.h"
+#include <format>
 
 
 PIDTick::operator double() const noexcept
@@ -9,24 +12,33 @@ PIDTick::operator double() const noexcept
 PIDTick RegulatorPID::symuluj(double uchyb)
 {
     PIDTick tick;
+
     tick.P = k * uchyb;
 
-    sumaUchybowCalkowanieWewnetrzne += (double)uchyb / Ti;
-    sumaUchybowCalkowanieZewnetrzne += uchyb;
-
-    switch (sposobLiczeniaCalki)
+    if(Ti == 0.0)
     {
-    case Zewnetrzne:
-        tick.I = (double)sumaUchybowCalkowanieZewnetrzne / Ti;
-        break;
-    case Wewnetrzne:
-        tick.I = sumaUchybowCalkowanieWewnetrzne;
-        break;
+        tick.I = 0.0;
+    }
+    else
+    {
+        sumaUchybowCalkowanieZewnetrzne += uchyb;
+        sumaUchybowCalkowanieWewnetrzne += (double)uchyb / Ti;
+        switch (sposobLiczeniaCalki)
+        {
+        case Zewnetrzne:
+            tick.I = (double)sumaUchybowCalkowanieZewnetrzne / Ti;
+            break;
+        case Wewnetrzne:
+            tick.I = sumaUchybowCalkowanieWewnetrzne;
+            break;
+        }
     }
 
-    tick.D = Td * (uchyb - poprzedniUchyb);
-    poprzedniUchyb = uchyb;
 
+
+    tick.D = Td * (uchyb - poprzedniUchyb);
+    // qDebug() << std::format("P= {} I = {} D= {} ", tick.P, tick.I, tick.D).c_str();
+    poprzedniUchyb = uchyb;
     return tick;
 }
 
@@ -39,10 +51,10 @@ void RegulatorPID::zmienSposobLiczeniaCalki(SposobLiczeniaCalki value)
     switch (value)
     {
     case SposobLiczeniaCalki::Wewnetrzne:
-        sumaUchybowCalkowanieZewnetrzne = (double)sumaUchybowCalkowanieWewnetrzne / Ti;
+        sumaUchybowCalkowanieWewnetrzne = sumaUchybowCalkowanieZewnetrzne / Ti;
         break;
     case SposobLiczeniaCalki::Zewnetrzne:
-        sumaUchybowCalkowanieWewnetrzne = sumaUchybowCalkowanieZewnetrzne * Ti;
+        sumaUchybowCalkowanieZewnetrzne = sumaUchybowCalkowanieWewnetrzne * Ti;
         break;
     default:
         assert(1 == 0); // wyrzuć błąd
@@ -50,11 +62,8 @@ void RegulatorPID::zmienSposobLiczeniaCalki(SposobLiczeniaCalki value)
     }
 }
 RegulatorPID::RegulatorPID(double k, double Ti, double Td,
-             double antiWindup, double antiWindupMin, double antiWindupMax,
-             bool antiWindupActive)
-    : antiWindupMax(this, antiWindupMax)
-    , antiWindupMin(this, antiWindupMin)
-    , antiWindupWspolczynnik(antiWindup)
+             MinMaxClamp ograniczenia, bool antiWindupActive)
+    : limityWyjscia(ograniczenia)
     , antiWindupActive(antiWindupActive)
     , k(k)
     , Ti(Ti)

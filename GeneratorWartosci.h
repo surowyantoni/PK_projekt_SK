@@ -10,7 +10,11 @@ public:
         KWADRAT = 0,
         SINUS = 1,
     };
-    GeneratorWartosci(double amplituda = 1.0, double skladowaStala = 0.0, uint32_t okres = 20, TypSygnalu typSygnalu = TypSygnalu::SINUS, double wypelnienie = 0.5);
+    GeneratorWartosci(double amplituda = 1.0,
+                      double skladowaStala = 0.0,
+                      uint32_t okres = 200,
+                      TypSygnalu typSygnalu = TypSygnalu::SINUS,
+                      double wypelnienie = 0.5);
 
 
     double generuj();
@@ -20,7 +24,7 @@ public:
     PROPERTY(uint32_t, Okres)
         void set(const uint32_t& value)
         {
-            assert(value >= 4);
+            assert(value >= 1);
             this->value = value;
         }
     } okres;
@@ -40,7 +44,7 @@ public:
         void set(const double& value)
         {
             assert(value >= 0.0);
-            assert(value <= 2.0);
+            assert(value <= 1.0);
             this->value = value;
         }
     } wypelnienie;

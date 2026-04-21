@@ -30,7 +30,7 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QHBoxLayout" name="horizontalLayout_7" stretch="7,0">
     <item>
-     <layout class="QVBoxLayout" name="verticalLayout" stretch=""/>
+     <layout class="QVBoxLayout" name="verticalLayout"/>
     </item>
     <item>
      <layout class="QVBoxLayout" name="verticalLayout_paramatry">
@@ -50,7 +50,7 @@
         </property>
         <layout class="QGridLayout" name="gridLayout_5">
          <item row="0" column="0">
-          <widget class="QDoubleSpinBox" name="wzmocnienieP">
+          <widget class="QDoubleSpinBox" name="spinBox_wzmocnienie">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
              <horstretch>0</horstretch>
@@ -230,7 +230,7 @@
          <item row="0" column="0">
           <widget class="QDoubleSpinBox" name="szerokoscHisterezy">
            <property name="sizePolicy">
-            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
@@ -696,14 +696,14 @@
          <item row="0" column="0" colspan="2">
           <layout class="QHBoxLayout" name="horizontalLayout_4">
            <item>
-            <widget class="QCheckBox" name="checkBox">
+            <widget class="QCheckBox" name="checkBox_nasycenie">
              <property name="text">
               <string>Nasycenie</string>
              </property>
             </widget>
            </item>
            <item>
-            <widget class="QCheckBox" name="checkBox_2">
+            <widget class="QCheckBox" name="checkBox_ograniczenie">
              <property name="text">
               <string>Ograniczenie</string>
              </property>

@@ -19,7 +19,11 @@ WarstaUslug::WarstaUslug()
     interwal = interwal.get(); // wywoalanie settera - ustawienie timera
     QObject::connect(&timer, &QTimer::timeout, this, &WarstaUslug::symuluj);
 }
-void WarstaUslug::uzyjRegluatora(UAR::RodzajSterowania regulacja)
+UAR::RodzajSterowania WarstaUslug::Regulacja()
+{
+    return uar.getWybranyRegulator();
+}
+void WarstaUslug::Regulacja(UAR::RodzajSterowania regulacja)
 {
     switch (regulacja)
     {

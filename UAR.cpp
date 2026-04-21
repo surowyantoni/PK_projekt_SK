@@ -56,15 +56,16 @@ UAR::Tick UAR::symuluj()
     {
     case RodzajSterowania::PID:
         tick.pid = PID->symuluj(tick.uchyb);
-        tick.sterowanie = tick.pid.value();
+        tick.sterowanie = PID->limityWyjscia.clamp(tick.pid.value());
         break;
     case RodzajSterowania::OnOff:
+        tick.pid = std::nullopt;
         tick.sterowanie = OnOff->symuluj(tick.uchyb);
         break;
     }
 
-    poprzednieWyjscie = ARX->symuluj(wartoscZadana);
-    tick.wartoscRegulowana = poprzednieWyjscie;
+    tick.wartoscRegulowana = ARX->symuluj(tick.sterowanie);
+    poprzednieWyjscie = tick.wartoscRegulowana;
     return tick;
 }
 

@@ -1,5 +1,6 @@
 #include "parametryarx.h"
 #include "mainwindow.h"
+#include "ui_mainwindow.h"
 #include "ui_parametryarx.h"
 #include <vector>
 
@@ -25,24 +26,21 @@ ParametryARX::ParametryARX(MainWindow *parentWindow)
         ui->verticalFrame_2->setLayout(dynamicLayoutVectorB);
     }
 
-    std::vector<double> vecA = m_parent->uslugi.arx.A;
-    std::vector<double> vecB = m_parent->uslugi.arx.A;
+    std::vector<ARX::Wspolczynnik> vec = m_parent->uslugi.arx.wspolczynniki;
 
-    if (vecA.empty()) {
+    if (vec.empty())
+    {
         for (int i = 0; i < 3; ++i)
+        {
             addNewFieldVectorA(0.0);
-    } else {
-        for (double val : vecA) {
-            addNewFieldVectorA(val);
-        }
-    }
-
-    if (vecB.empty()) {
-        for (int i = 0; i < 3; ++i)
             addNewFieldVectorB(0.0);
-    } else {
-        for (double val : vecB) {
-            addNewFieldVectorB(val);
+        }
+    } else
+    {
+        for (auto val : vec)
+        {
+            addNewFieldVectorA(val.A);
+            addNewFieldVectorB(val.B);
         }
     }
 
@@ -216,8 +214,18 @@ void ParametryARX::on_buttonBox_accepted()
     readSzum();
     readZakresSterowania();
 
-    m_parent->uslugi.arx.A = readAllFieldsVectorA();
-    m_parent->uslugi.arx.B = readAllFieldsVectorB();
+    std::vector<ARX::Wspolczynnik> vec;
+    for(auto i : readAllFieldsVectorA())
+    {
+        vec.push_back(ARX::Wspolczynnik{i, 0.0});
+    }
+    std::vector<double> vecB = readAllFieldsVectorB();
+    for (int var = 0; var < vecB.size(); ++var)
+    {
+        vec[var].B = vecB[var];
+    }
+
+    m_parent->uslugi.arx.wspolczynniki.set(vec);
     m_parent->uslugi.arx.k = (readOpoznienie());
     m_parent->uslugi.arx.limityZadana.setMax(readMax());
     m_parent->uslugi.arx.limityZadana.setMin(readMin());
@@ -228,4 +236,6 @@ void ParametryARX::on_buttonBox_accepted()
     m_parent->uslugi.arx.limityZadana.setMin(ui->odWartoscRegulowania->value());
 
     m_parent->uslugi.arx.limityZadana.setActive(ui->checkboxOgraniczenia->isChecked());
+
+    m_parent->ui->pushButton_arx->setEnabled(true);
 }

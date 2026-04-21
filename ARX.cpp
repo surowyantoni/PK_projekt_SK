@@ -2,29 +2,16 @@
 #include <random>
 
 //konstruktory
-ARX::ARX(vector<double> nA, vector<double> nB, int nk, double nz)
-    : limityZadana(MinMaxClamp(-10.0, 10.0))
-    , limityRegulowana(MinMaxClamp(-10.0, 10.0))
-    , k(this, nk)
-    , z(nz)
+ARX::ARX(std::vector<Wspolczynnik>&& wspolczynniki, int k, double z)
+    : limityZadana(MinMaxClamp(-10.0, 10.0, true))
+    , limityRegulowana(MinMaxClamp(-10.0, 10.0, true))
+    , k(this, k)
+    , z(z)
     , U(std::deque<double>())
-    , Uopozniony(std::deque<double>())
     , Y(std::deque<double>())
-    , A(this, nA)
-    , B(this, nB)
+    , wspolczynniki(wspolczynniki)
 {
-    Uopozniony.get().resize(k);
-    U.get().resize(B.get().size());
-    Y.get().resize(A.get().size());
-
-
-    for (size_t i = 0; i < k; i++) {
-        Uopozniony.get().push_back(0.0);
-    }
-    for (size_t i = 0; i < B.get().size(); i++)
-        U.get().push_back(0.0);
-    for (size_t i = 0; i < A.get().size(); i++)
-        Y.get().push_back(0.0);
+    reset();
 }
 
 ARX ARX::fromJSON(QJsonObject& json)
@@ -45,65 +32,39 @@ double ARX::generujZaklocenie()
 
 void ARX::reset()
 {
-    U.get().clear();
-    Y.get().clear();
-    Uopozniony.get().clear();
-
-    Uopozniony.get().resize(k);
-    U.get().resize(B.get().size());
-    Y.get().resize(A.get().size());
-
-
-    for (size_t i = 0; i < k; i++) {
-        Uopozniony.get().push_back(0.0);
-    }
-    for (size_t i = 0; i < B.get().size(); i++)
-        U.get().push_back(0.0);
-    for (size_t i = 0; i < A.get().size(); i++)
-        Y.get().push_back(0.0);
+    U.use().clear();
+    Y.use().clear();
+    for (size_t i = 0; i < wspolczynniki.get().size() + k; i++)
+        U.use().push_back(0.0);
+    for (size_t i = 0; i < wspolczynniki.get().size(); i++)
+        Y.use().push_back(0.0);
 }
 double ARX::symuluj(double u)
 {
-    int size = B.get().size() - 1;
+    U.use().push_front(limityZadana.clamp(u));
+    U.use().pop_back();
 
-    U.get().pop_front();
-    U.get().push_back(Uopozniony.get().front());
-    u = limityZadana.clamp(u);
+    double b = 0.0, a = 0.0;
 
-    Uopozniony.get().push_back(u);
-    Uopozniony.get().pop_front();
 
-    double b = 0.0, a = 0.0, y = 0.0;
-
-    for (int i = 0; i < B.get().size(); i++)
+    for (size_t i = 0; i < wspolczynniki.get().size(); i++)
     {
-        b += B.get()[i] * U.get()[size - i]; // Mnożenie wektora B przez historię wejść U
-        a += A.get()[i] * Y.get()[size - i]; // Mnożenie wektora A przez historię wyjść Y
+        b += wspolczynniki.get()[i].B * U.get()[i + k]; // Mnożenie wektora B przez historię wejść U
+        a += wspolczynniki.get()[i].A * Y.get()[i]; // Mnożenie wektora A przez historię wyjść Y
     }
-    y = b - a + generujZaklocenie();
+    double y = b - a + generujZaklocenie();
 
     y = limityRegulowana.clamp(y);
 
-    Y.get().push_back(y);
-    Y.get().pop_front();
+    Y.use().push_front(y);
+    Y.use().pop_back();
     return y;
 }
 
 
 void ARX::aktualizacjaBuforowPoZmianieOpoznienia()
 {
-    if (Uopozniony.get().size() == k) {
-        return;
-    } else if (Uopozniony.get().size() < k) {
-        while (k > Uopozniony.get().size()) {
-            Uopozniony.get().push_front(Uopozniony.get().front());
-        }
-        return;
-    } else {
-        while (k < Uopozniony.get().size()) {
-            Uopozniony.get().pop_back();
-        }
-    }
+ // TODO
 }
 
 QJsonObject ARX::toJSON() const
