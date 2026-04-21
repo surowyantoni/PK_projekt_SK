@@ -52,42 +52,48 @@ void MinMaxClamp::setMinMax(double min, double max)
     this->max = max;
     this->min = min;
 }
-template<typename T>
-Property<T>::Property(T& initialValue)
-    :value(initialValue)
-{}
+// template<typename T>
+// Property<T>::Property(T& initialValue)
+//     :value(initialValue)
+// {}
 
-template<typename T>
-void Property<T>::set(const T &value)
+// template<typename T>
+// void Property<T>::set(const T &value)
+// {
+//     this->value = value;
+// }
+
+// template<typename T>
+// T Property<T>::get() const
+// {
+//     return this->value;
+// }
+
+// template<typename T>
+// void Property<T>::operator=(const T &value)
+// {
+//     set(value);
+// }
+
+// template<typename T>
+// Property<T>::operator T() const
+// {
+//     return get();
+// }
+
+// template<typename T>
+// PropertyWithAccess<T>::PropertyWithAccess(void* owner, T &initalValue)
+//     : Property<T>(initalValue)
+//     , owner(owner)
+// {}
+
+
+inline uint32_t secondsToMili(double seconds)
 {
-    this->value = value;
+    return seconds * 1000;
 }
 
-template<typename T>
-T Property<T>::get() const
+inline double miliToSeconds(uint32_t miliseconds)
 {
-    return this->value;
+    return (double)miliseconds / 1000.0;
 }
-
-template<typename T>
-void Property<T>::operator=(const T &value)
-{
-    set(value);
-}
-
-template<typename T>
-Property<T>::operator T() const
-{
-    return get();
-}
-
-template<typename T>
-PropertyWithAccess<T>::PropertyWithAccess(void* owner)
-    : owner(owner)
-{}
-template<typename T>
-PropertyWithAccess<T>::PropertyWithAccess(void* owner, T &initalValue)
-    : Property<T>(initalValue)
-    , owner(owner)
-{}
-

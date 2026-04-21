@@ -22,8 +22,14 @@ public:
 
     PROPERTY(uint32_t, CzasTrwaniaSymulacjiWMilisekundach)
     private:
-        void set(const uint32_t& value);
-        void operator=(const uint32_t& value);
+        void set(const uint32_t& value)
+        {
+            this->value = value;
+        };
+        void operator=(const uint32_t& value)
+        {
+            set(value);
+        };
     } czas;
 
     PROPERTY_ACCESS(bool, CzySymulacjaDziala)
@@ -46,9 +52,12 @@ public:
     void uzyjRegluatora(UAR::RodzajSterowania regulacja);
 signals:
     void updateCharts(UAR::Tick tick, uint32_t czas);
+    void updateUI();
 private:
     UAR uar;
     QTimer timer;
 private slots:
     void symuluj();
+    void wczytajZPliku();
+    void zapiszDoPliku();
 };

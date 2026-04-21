@@ -37,10 +37,21 @@ void WarstaUslug::reset()
     pid.reset();
     onOff.reset();
     generator.reset();
+    czas = 0;
 }
 
 void WarstaUslug::symuluj()
 {
     czas = interwal + czas;
     emit updateCharts(uar.symuluj(), czas);
+}
+
+void WarstaUslug::wczytajZPliku()
+{
+    //TODO
+    emit updateUI();
+}
+void WarstaUslug::zapiszDoPliku()
+{
+    //TODO
 }

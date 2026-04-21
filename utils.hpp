@@ -1,6 +1,7 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+#include <cstdint>
 class MinMaxClamp
 {
     double min;
@@ -25,18 +26,26 @@ protected:
     T value;
 public:
     Property<T>() = default;
-    Property<T>(T& initialValue);
+    Property<T>(T& initialValue)
+    :value(initialValue)
+    {
+
+    }
     Property<T> (Property<T>&) = delete;
     Property<T> (Property<T>&&) = delete;
     Property<T> operator=(Property<T>&) = delete;
     Property<T> operator=(Property<T>&&) = delete;
 
     // to do override
-    void set(const T& value);
-    void operator=(const T& value);
+    void set(const T& value)
+    {  this->value = value; }
+    void operator=(const T& value)
+    { set(value); }
     // to do override
-    T get() const;
-    operator T() const;
+    T get() const
+    {   return value;   }
+    operator T() const
+    { return get(); }
 };
 
 template<typename T>
@@ -47,8 +56,10 @@ protected:
     void* owner;
 public:
     PropertyWithAccess<T>() = delete;
-    PropertyWithAccess<T>(void* owner);
-    PropertyWithAccess<T>(void* owner, T &initalValue);
+    PropertyWithAccess<T>(void* owner, T &initalValue)
+        : Property<T>(initalValue)
+        , owner(owner)
+    {}
     PropertyWithAccess<T> (PropertyWithAccess<T>&) = delete;
     PropertyWithAccess<T> (PropertyWithAccess<T>&&) = delete;
     PropertyWithAccess<T> operator=(PropertyWithAccess<T>&) = delete;
@@ -97,6 +108,8 @@ struct name : public PropertyWithAccess<type>\
 //     } speed;
 // };
 
+inline uint32_t secondsToMili(double seconds);
+inline double miliToSeconds(uint32_t miliseconds);
 
 
 #endif // UTILS_H

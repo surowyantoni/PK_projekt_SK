@@ -25,8 +25,8 @@ ParametryARX::ParametryARX(MainWindow *parentWindow)
         ui->verticalFrame_2->setLayout(dynamicLayoutVectorB);
     }
 
-    std::vector<double> vecA = m_parent->m_uslugi.get_m_WspolczynnikiA();
-    std::vector<double> vecB = m_parent->m_uslugi.get_m_WspolczynnikiB();
+    std::vector<double> vecA = m_parent->uslugi.arx.A;
+    std::vector<double> vecB = m_parent->uslugi.arx.A;
 
     if (vecA.empty()) {
         for (int i = 0; i < 3; ++i)
@@ -46,13 +46,13 @@ ParametryARX::ParametryARX(MainWindow *parentWindow)
         }
     }
 
-    ui->opoznienie->setValue(m_parent->m_uslugi.get_m_OpoznienieTransportowe());
+    ui->opoznienie->setValue(m_parent->uslugi.arx.k);
 
-    ui->szum->setValue(m_parent->m_uslugi.get_m_Zaklucenie());
-    ui->checkboxOgraniczenia->setChecked(m_parent->m_uslugi.get_m_czyOgraniczenie());
+    ui->szum->setValue(m_parent->uslugi.arx.z);
+    ui->checkboxOgraniczenia->setChecked(m_parent->uslugi.arx.limityZadana.getActive());
 
-    ui->odWartoscSterowania->setValue(m_parent->m_uslugi.get_m_OgraniczenieMin());
-    ui->doWartoscSterowania->setValue(m_parent->m_uslugi.get_m_OgraniczenieMax());
+    ui->odWartoscSterowania->setValue(m_parent->uslugi.arx.limityZadana.getMin());
+    ui->doWartoscSterowania->setValue(m_parent->uslugi.arx.limityZadana.getMax());
 }
 
 // Zmodyfikowana funkcja dodająca pole z wartością
@@ -216,18 +216,16 @@ void ParametryARX::on_buttonBox_accepted()
     readSzum();
     readZakresSterowania();
 
-    m_parent->m_uslugi.set_wspolczynniki(readAllFieldsVectorA(), readAllFieldsVectorB());
-    m_parent->m_uslugi.set_m_opoznienieTransportowe(readOpoznienie());
-    m_parent->m_uslugi.set_m_ograniczenieMaxZad(readMax());
-    m_parent->m_uslugi.set_m_ograniczenieMinZad(readMin());
-    m_parent->m_uslugi.set_m_wartoscZaklocen(readSzum());
-    m_parent->m_uslugi.set_m_ograniczenieMaxReg(readRegMax());
-    m_parent->m_uslugi.set_m_ograniczenieMinReg(readRegMin());
-    m_parent->m_uslugi.set_m_arx();
-    m_parent->m_uslugi.set_m_czyOgraniczenie(readCzyOpoznienie());
+    m_parent->uslugi.arx.A = readAllFieldsVectorA();
+    m_parent->uslugi.arx.B = readAllFieldsVectorB();
+    m_parent->uslugi.arx.k = (readOpoznienie());
+    m_parent->uslugi.arx.limityZadana.setMax(readMax());
+    m_parent->uslugi.arx.limityZadana.setMin(readMin());
+    m_parent->uslugi.arx.z = readSzum();
+    m_parent->uslugi.arx.limityZadana.setActive(readCzyOpoznienie());
 
-    m_parent->m_uslugi.set_m_ograniczenieMaxReg(ui->doWartoscRegulowania->value());
-    m_parent->m_uslugi.set_m_ograniczenieMinReg(ui->odWartoscRegulowania->value());
+    m_parent->uslugi.arx.limityZadana.setMax(ui->doWartoscRegulowania->value());
+    m_parent->uslugi.arx.limityZadana.setMin(ui->odWartoscRegulowania->value());
 
-    m_parent->m_uslugi.set_m_czyOgraniczenie(ui->checkboxOgraniczenia->isChecked());
+    m_parent->uslugi.arx.limityZadana.setActive(ui->checkboxOgraniczenia->isChecked());
 }
