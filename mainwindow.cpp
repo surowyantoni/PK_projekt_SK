@@ -12,6 +12,18 @@ MainWindow::MainWindow(QWidget *parent)
     externalUIUpdate();
     QObject::connect(&uslugi, &WarstaUslug::updateCharts, this, &MainWindow::chartsUpdate);
     QObject::connect(&uslugi, &WarstaUslug::updateUI, this, &MainWindow::externalUIUpdate);
+    ui->plot_zadana_regulowana->serie.push_back(Seria{&zadana, Qt::red, "Zadana"});
+    ui->plot_zadana_regulowana->serie.push_back(Seria{&regulowana, Qt::blue, "Regulowana"});
+    ui->plot_uchyb->serie.push_back(Seria{&uchyb, Qt::GlobalColor::darkRed, "Uchyb"});
+    ui->plot_sterowanie->serie.push_back(Seria{&sterowanie, Qt::GlobalColor::green, "Sterowanie"});
+    ui->plot_pid->serie.push_back(Seria{&pidP, Qt::GlobalColor::green, "Czlon Proporcjonalny"});
+    ui->plot_pid->serie.push_back(Seria{&pidI, Qt::GlobalColor::red, "Czlon Całkujacy"});
+    ui->plot_pid->serie.push_back(Seria{&pidD, Qt::GlobalColor::blue, "Czlon Rożniczkujący"});
+    ui->plot_zadana_regulowana->update();
+    ui->plot_uchyb->update();
+    ui->plot_sterowanie->update();
+    ui->plot_pid->update();
+
 }
 void MainWindow::externalUIUpdate()
 {
@@ -78,7 +90,22 @@ void MainWindow::externalUIUpdate()
 }
 void MainWindow::chartsUpdate(UAR::Tick tick, uint32_t czas)
 {
-    qDebug() << "CZas:" << czas << "TICK:" << tick.wartoscZadana;
+    // qDebug() << "CZas:" << czas << "TICK:" << tick.wartoscZadana;
+    zadana.appendLastValue(QPointF(miliToSeconds(czas), tick.wartoscZadana));
+    regulowana.appendLastValue(QPointF(miliToSeconds(czas), tick.wartoscRegulowana));
+    sterowanie.appendLastValue(QPointF(miliToSeconds(czas), tick.sterowanie));
+    uchyb.appendLastValue(QPointF(miliToSeconds(czas), tick.uchyb));
+    if(tick.pid.has_value())
+    {
+        pidP.appendLastValue(QPointF(miliToSeconds(czas), tick.pid->P));
+        pidI.appendLastValue(QPointF(miliToSeconds(czas), tick.pid->I));
+        pidD.appendLastValue(QPointF(miliToSeconds(czas), tick.pid->D));
+    }
+
+    ui->plot_zadana_regulowana->update();
+    ui->plot_uchyb->update();
+    ui->plot_sterowanie->update();
+    ui->plot_pid->update();
 }
 
 MainWindow::~MainWindow()
@@ -214,6 +241,13 @@ void MainWindow::on_pushButton_arx_clicked()
 void MainWindow::on_pushButton_reset_clicked()
 {
     uslugi.reset();
+    zadana.clear();
+    regulowana.clear();
+    pidP.clear();
+    pidI.clear();
+    pidD.clear();
+    uchyb.clear();
+    sterowanie.clear();
 }
 
 

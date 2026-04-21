@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 
+#include "ListWithWxtremes.hpp"
 #include "WarstwaUslug.h"
 
 QT_BEGIN_NAMESPACE
@@ -82,7 +83,13 @@ private:
     WarstaUslug uslugi;
     ParametryARX* paraARX;
 
-    QList<double> wartosciZadane;
+    ListWithExtremes zadana;
+    ListWithExtremes regulowana;
+    ListWithExtremes pidP;
+    ListWithExtremes pidI;
+    ListWithExtremes pidD;
+    ListWithExtremes sterowanie;
+    ListWithExtremes uchyb;
     // QCPGraph *graph1;
     // QCPGraph *graph2;
     // QCPGraph *graph3;

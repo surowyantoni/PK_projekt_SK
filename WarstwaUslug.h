@@ -17,7 +17,13 @@ class WarstaUslug : public QObject
 {
     Q_OBJECT
 public:
-    PROPERTY(uint32_t, InterwalSymulacjiWMilisekundach)
+    PROPERTY_ACCESS(uint32_t, InterwalSymulacjiWMilisekundach)
+        void set(const uint32_t& value)
+        {
+            assert(value > 1);
+            static_cast<WarstaUslug*>(owner)->timer.setInterval(value);
+            this->value = value;
+        }
     } interwal;
 
     PROPERTY(uint32_t, CzasTrwaniaSymulacjiWMilisekundach)

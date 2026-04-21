@@ -4,7 +4,7 @@
 
 
 WarstaUslug::WarstaUslug()
-    : interwal(200)
+    : interwal(this, 200)
     , czas(0)
     , dziala(this, false)
     , arx(ARX())

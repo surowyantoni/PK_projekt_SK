@@ -12,7 +12,7 @@
 class ListWithExtremes
 {
     QList<QPointF> list;
-    std::map<qreal, uint16_t> values;
+    std::map<double, uint16_t> values;
 public:
 
     ListWithExtremes();

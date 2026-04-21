@@ -1,6 +1,9 @@
 #include "ListWithWxtremes.hpp"
 
-ListWithExtremes::ListWithExtremes() {}
+ListWithExtremes::ListWithExtremes()
+    : list(QList<QPointF>())
+    , values(std::map<double, uint16_t>())
+{}
 QList<QPointF>* ListWithExtremes::getList()
 {
     return &this->list;
@@ -35,6 +38,5 @@ void ListWithExtremes::deleteFirstValue()
 void ListWithExtremes::clear()
 {
     this->list.clear();
-    // ERROR - Kamil
-    // this->values.clear();
+    this->values.clear();
 }

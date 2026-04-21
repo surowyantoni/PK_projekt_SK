@@ -30,7 +30,20 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QHBoxLayout" name="horizontalLayout_7" stretch="7,0">
     <item>
-     <layout class="QVBoxLayout" name="verticalLayout"/>
+     <layout class="QVBoxLayout" name="verticalLayout">
+      <item>
+       <widget class="Plot" name="plot_uchyb" native="true"/>
+      </item>
+      <item>
+       <widget class="Plot" name="plot_pid" native="true"/>
+      </item>
+      <item>
+       <widget class="Plot" name="plot_zadana_regulowana" native="true"/>
+      </item>
+      <item>
+       <widget class="Plot" name="plot_sterowanie" native="true"/>
+      </item>
+     </layout>
     </item>
     <item>
      <layout class="QVBoxLayout" name="verticalLayout_paramatry">
@@ -799,6 +812,14 @@
    </property>
   </action>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>Plot</class>
+   <extends>QWidget</extends>
+   <header>plot.hpp</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>
