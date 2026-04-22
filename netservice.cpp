@@ -46,7 +46,7 @@ void NetService::startAsServer(int port)
     if (server->listen(port))
         emit logAppend("Serwer nasłuchuje na porcie " + QString::number(port));
 
-    uslugi->updateUI();
+    emit uslugi->updateUI();
 }
 
 void NetService::handleNewClient(int id, QString ip)
@@ -70,7 +70,7 @@ void NetService::startAsClient(QString ip, int port)
     remoteIP = ip;
     client->connectTo(ip, port);
 
-    uslugi->updateUI();
+    emit uslugi->updateUI();
 }
 
 void NetService::stopAll()
@@ -97,6 +97,7 @@ void NetService::stopAllLocal()
 
     authAttempts = 0;
     emit updateStatus(false, "");
+    emit uslugi->updateUI();
 }
 
 void NetService::setAuthMode(int mode, QString code)
@@ -206,7 +207,7 @@ void NetService::processIncomingData(int id, QByteArray data)
 
             uslugi->arx.wspolczynniki = (ARX::WspolczynnikiObiektuARX)noweWspol;
             uslugi->arx.k.set(k);
-            uslugi->arx.z = (double)z;
+            uslugi->arx.z.set(z);
 
             uslugi->arx.limityZadana.setMin(minU);
             uslugi->arx.limityZadana.setMax(maxU);
@@ -359,11 +360,12 @@ void NetService::handleDisconnection()
 {
     emit logAppend("BŁĄD! Połączenie zerwane! Powrót do trybu stacjonarnego.");
     emit updateStatus(false, "");
+    emit uslugi->updateUI();
 }
 
 bool NetService::isConnected()
 {
-    if (client) return client->isConnected();
+    if (isClient()) return client->isConnected();
     if (isServer()) return true;
     return false;
 }
@@ -371,6 +373,11 @@ bool NetService::isConnected()
 bool NetService::isServer()
 {
     return server != nullptr;
+}
+
+bool NetService::isClient()
+{
+    return client != nullptr;
 }
 
 // QString bitString;

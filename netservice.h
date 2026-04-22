@@ -13,6 +13,7 @@ class NetService : public QObject
     Q_OBJECT
 public:
     bool isServer();
+    bool isClient();
 
     //explicit NetService(QObject *parent = nullptr);
     explicit NetService(WarstaUslug *u, QObject *parent = nullptr);

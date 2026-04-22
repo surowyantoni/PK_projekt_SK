@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1507</width>
-    <height>1063</height>
+    <height>1097</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -51,7 +51,7 @@
        <enum>QLayout::SetNoConstraint</enum>
       </property>
       <item>
-       <widget class="QGroupBox" name="groupBox">
+       <widget class="QGroupBox" name="groupBox_pid">
         <property name="font">
          <font>
           <pointsize>12</pointsize>
@@ -464,7 +464,7 @@
        </widget>
       </item>
       <item>
-       <widget class="QGroupBox" name="groupBox_2">
+       <widget class="QGroupBox" name="groupBox_generator">
         <property name="font">
          <font>
           <pointsize>12</pointsize>
@@ -667,7 +667,7 @@
        </widget>
       </item>
       <item>
-       <widget class="QGroupBox" name="groupBox_3">
+       <widget class="QGroupBox" name="groupBox_filtr">
         <property name="title">
          <string>Filtr Przeciwnasyceniowy</string>
         </property>
@@ -782,7 +782,7 @@
      <x>0</x>
      <y>0</y>
      <width>1507</width>
-     <height>21</height>
+     <height>27</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuMenu">

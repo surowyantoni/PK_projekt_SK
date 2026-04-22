@@ -84,51 +84,34 @@ void MainWindow::applyNetworkRoleBlocking()
     // Pobranie informacji o połączeniu z Warstwy Usług (poprzez NetService)
     bool connected = uslugi.getNetService() && uslugi.getNetService()->isConnected();
     bool isServer = uslugi.getNetService() && uslugi.getNetService()->isServer();
+    bool isClient = uslugi.getNetService() && uslugi.getNetService()->isClient();
 
     if (!connected) {
         // TRYB STACJONARNY: Wszystko odblokowane
-        ui->groupBox->setEnabled(true);
+        ui->groupBox_pid->setEnabled(true);
         ui->groupBox_onoff->setEnabled(true);
         ui->groupBox_regulacja->setEnabled(true);
         ui->groupBox_wykresy->setEnabled(true);
-        ui->groupBox_2->setEnabled(true);
-        ui->groupBox_3->setEnabled(true);
+        ui->groupBox_generator->setEnabled(true);
+        ui->groupBox_filtr->setEnabled(true);
         ui->pushButton_arx->setEnabled(true);
         ui->pushButton_startStop->setEnabled(true);
         ui->pushButton_reset->setEnabled(true);
         return;
     }
 
-    if (isServer)
-    {
-        // ROLA: REGULATOR (Serwer)
-        ui->groupBox->setEnabled(true);
-        ui->groupBox_onoff->setEnabled(true);
-        ui->groupBox_regulacja->setEnabled(true);
-        ui->groupBox_wykresy->setEnabled(true);
-        ui->groupBox_2->setEnabled(true);
-        ui->groupBox_3->setEnabled(true);
-        ui->pushButton_arx->setEnabled(true);
-        ui->pushButton_startStop->setEnabled(true);
-        ui->pushButton_reset->setEnabled(true);
 
-        ui->pushButton_arx->setEnabled(false);
-    } else
-    {
-        // ROLA: OBIEKT (Klient)
-        ui->groupBox->setEnabled(false);
-        ui->groupBox_onoff->setEnabled(false);
-        ui->groupBox_regulacja->setEnabled(false);
-        ui->groupBox_wykresy->setEnabled(false);
-        ui->groupBox_2->setEnabled(false);
-        ui->groupBox_3->setEnabled(false);
-        ui->pushButton_arx->setEnabled(false);
-        ui->pushButton_startStop->setEnabled(false);
-        ui->pushButton_reset->setEnabled(false);
+    // ROLA: sieciowa
+    ui->groupBox_pid->setEnabled(isServer);
+    ui->groupBox_onoff->setEnabled(isServer);
+    ui->groupBox_regulacja->setEnabled(isServer);
+    ui->groupBox_wykresy->setEnabled(true);
+    ui->groupBox_generator->setEnabled(isServer);
+    ui->groupBox_filtr->setEnabled(isServer);
+    ui->pushButton_arx->setEnabled(isClient);
+    ui->pushButton_startStop->setEnabled(true);
+    ui->pushButton_reset->setEnabled(true);
 
-        ui->pushButton_arx->setEnabled(true);
-
-    }
 }
 
 void MainWindow::chartsUpdate(UAR::Tick tick, uint32_t czas)

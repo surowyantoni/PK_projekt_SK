@@ -46,7 +46,10 @@ public:
                 static_cast<WarstaUslug*>(owner)->timer.start();
             else
                 static_cast<WarstaUslug*>(owner)->timer.stop();
-            this->value = value;
+        }
+        bool get() const
+        {
+            return static_cast<WarstaUslug*>(owner)->timer.isActive();
         }
     } dziala;
     ARX arx;
@@ -60,13 +63,14 @@ public:
     void reset();
     void Regulacja(UAR::RodzajSterowania regulacja);
     UAR::RodzajSterowania Regulacja();
+
 signals:
     void updateCharts(UAR::Tick tick, uint32_t czas);
     void updateUI();
 private:
+    NetService *netService;
     UAR uar;
     QTimer timer;
-    NetService *netService;
 private slots:
     void symuluj();
     void wczytajZPliku();
