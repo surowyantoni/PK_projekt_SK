@@ -1,9 +1,12 @@
 #include "netservice.h"
+#include "WarstwaUslug.h"
+#include "RegulatorPID.h"
 #include "ProtocolDef.h"
 #include <QNetworkDatagram>
+#include <QDataStream>
 
-
-NetService::NetService(QObject *parent) : QObject(parent)
+NetService::NetService(WarstaUslug *u, QObject *parent)
+    : QObject(parent), uslugi(u)
 {
     udp = new QUdpSocket(this);
     udp->bind(discoveryPort, QUdpSocket::ShareAddress);
@@ -42,6 +45,8 @@ void NetService::startAsServer(int port)
 
     if (server->listen(port))
         emit logAppend("Serwer nasłuchuje na porcie " + QString::number(port));
+
+    uslugi->updateUI();
 }
 
 void NetService::handleNewClient(int id, QString ip)
@@ -64,6 +69,8 @@ void NetService::startAsClient(QString ip, int port)
 
     remoteIP = ip;
     client->connectTo(ip, port);
+
+    uslugi->updateUI();
 }
 
 void NetService::stopAll()
@@ -161,7 +168,6 @@ void NetService::processIncomingData(int id, QByteArray data)
 
         break;
         }
-
         case CONFIG_PID:
         {
             m_packetCounter++;
@@ -169,53 +175,86 @@ void NetService::processIncomingData(int id, QByteArray data)
             QByteArray data; in >> data;
             QDataStream params(&data, QIODevice::ReadOnly);
             params >> p >> i >> d >> mode >> min >> max;
-            emit pidUpdated(p, i, d, mode, min, max); // GUI aktualizuje kontrolki
+
+            uslugi->pid.k = (double)p;
+            uslugi->pid.Ti = (double)i;
+            uslugi->pid.Td = (double)d;
+            uslugi->pid.sposobLiczeniaCalki = (RegulatorPID::SposobLiczeniaCalki)mode;
+            uslugi->pid.limityWyjscia.setMin(min);
+            uslugi->pid.limityWyjscia.setMax(max);
+
+            emit uslugi->updateUI();
+
             break;
-            // QString bitString;
-            // for (char byte : data) {
-            //     // Convert each byte to an unsigned integer
-            //     unsigned char ubyte = static_cast<unsigned char>(byte);
-            //     // Loop through each bit (MSB first)
-            //     for (int i = 7; i >= 0; --i) {
-            //         bitString.append(((ubyte >> i) & 1) ? '1' : '0');
-            //     }
-            // }
-            // qDebug() << bitString;
-            // qDebug() << "P: " << p << "I: " << i << "D: " << d;
+        }
+        case CONFIG_ARX:
+        {
+            m_packetCounter++;
+            QByteArray data; in >> data;
+            QDataStream params(&data, QIODevice::ReadOnly);
+
+            quint32 size; params >> size;
+            std::vector<ARX::Wspolczynnik> noweWspol;
+            for(quint32 i=0; i<size; ++i)
+            {
+                double a, b; params >> a >> b;
+                noweWspol.push_back({a, b});
+            }
+
+            int k; double z, minU, maxU, minY, maxY;
+            params >> k >> z >> minU >> maxU >> minY >> maxY;
+
+            uslugi->arx.wspolczynniki = (ARX::WspolczynnikiObiektuARX)noweWspol;
+            uslugi->arx.k.set(k);
+            uslugi->arx.z = (double)z;
+
+            uslugi->arx.limityZadana.setMin(minU);
+            uslugi->arx.limityZadana.setMax(maxU);
+            uslugi->arx.limityRegulowana.setMin(minY);
+            uslugi->arx.limityRegulowana.setMax(maxY);
+
+            emit uslugi->updateUI();
+
+            break;
         }
         case CONFIG_GEN:
         {
             m_packetCounter++;
             int type; double amp, per, off, duty;
-            in >> type >> amp >> per >> off >> duty;
-            emit genUpdated(type, amp, per, off, duty);
+            QByteArray data; in >> data;
+            QDataStream params(&data, QIODevice::ReadOnly);
+            params >> type >> amp >> per >> off >> duty;
+
+            uslugi->generator.typSygnalu = (GeneratorWartosci::TypSygnalu)type;
+            uslugi->generator.amplituda = (double)amp;
+            uslugi->generator.okres = (double)per;
+            uslugi->generator.wypelnienie = (double)duty;
+            uslugi->generator.skladowaStala = (double)off;
+
+            emit uslugi->updateUI();
+
             break;
         }
         case SIM_SAMPLE:
         {
             m_packetCounter++;
             SimSample s;
-            memcpy(&s, data.data() + 1, sizeof(SimSample)); // Deserializacja szybka 1:1 [11]
+            memcpy(&s, data.data() + 1, sizeof(SimSample)); // Deserializacja szybka 1:1
             emit sampleReceived(s.u, s.k);
-            break;
-        }
-
-        case CONFIG_ARX:
-        {
-            m_packetCounter++;
-            QVector<double> A, B; int k; double sigma, minU, maxU, minY, maxY;
-            in >> A >> B >> k >> sigma >> minU >> maxU >> minY >> maxY;
-            emit arxUpdated(A, B, k, sigma, minU, maxU, minY, maxY);
             break;
         }
         case SIM_CMD:
         {
             m_packetCounter++;
-            quint8 cmd; in >> cmd; // 1-Start, 0-Stop, 2-Reset
-            if(cmd == 2)
-                // Reset zeruje bufory, ale NIE ustawienia [12]
-                emit resetRequested();
-            break;
+            QByteArray data; in >> data;
+            QDataStream params(&data, QIODevice::ReadOnly);
+            int cmd; params >> cmd;
+
+            if (cmd == 1) uslugi->dziala = true;        // START
+            else if (cmd == 0) uslugi->dziala = false;  // STOP
+            else if (cmd == 2) uslugi->reset();         // RESET
+
+            emit uslugi->updateUI();
         }
 
         case TXT_MSG:
@@ -258,7 +297,6 @@ void NetService::verifyCode(QString inputCode)
     }
 }
 
-
 void NetService::sendBinaryPacket(quint8 type, const QByteArray &data) {
     QByteArray package;
     QDataStream out(&package, QIODevice::WriteOnly);
@@ -266,6 +304,17 @@ void NetService::sendBinaryPacket(quint8 type, const QByteArray &data) {
 
     if (client && client->isConnected()) client->sendData(package);
     else if (server) server->sendTo(0, package);
+}
+
+void NetService::sendSimCmd(int cmd)
+{
+    if (!isConnected()) return;
+
+    QByteArray data;
+    QDataStream out(&data, QIODevice::WriteOnly);
+    out << cmd;
+
+    sendBinaryPacket(SIM_CMD, data);
 }
 
 void NetService::sendSample(quint32 k, double u, double y)
@@ -286,17 +335,6 @@ void NetService::sendPidConfig(double p, double i, double d, int mode, double mi
     QDataStream out(&data, QIODevice::WriteOnly);
     out << p << i << d << mode << min << max;
     sendBinaryPacket(CONFIG_PID, data);
-    // QString bitString;
-    // for (char byte : data) {
-    //     // Convert each byte to an unsigned integer
-    //     unsigned char ubyte = static_cast<unsigned char>(byte);
-    //     // Loop through each bit (MSB first)
-    //     for (int i = 7; i >= 0; --i) {
-    //         bitString.append(((ubyte >> i) & 1) ? '1' : '0');
-    //     }
-    // }
-    // qDebug() << bitString;
-    // qDebug() << "P: " << p << "I: " << i << "D: " << d;
 }
 
 // SYNCHRONIZACJA GENERATORA
@@ -309,10 +347,11 @@ void NetService::sendGenConfig(int type, double amp, double period, double offse
 }
 
 //SYNCHRONIZACJA ARX
-void NetService::sendArxConfig(const QVector<double>& A, const QVector<double>& B, int k, double sigma, double minU, double maxU, double minY, double maxY) {
+void NetService::sendArxConfig(const QVector<double>& A, const QVector<double>& B, int k, double sigma, double minU, double maxU, double minY, double maxY)
+{
     QByteArray data;
     QDataStream out(&data, QIODevice::WriteOnly);
-    out << A << B << k << sigma << minU << maxU << minY << maxY; // QDataStream sam dodaje rozmiar QVector
+    out << A << B << k << sigma << minU << maxU << minY << maxY;
     sendBinaryPacket(CONFIG_ARX, data);
 }
 
@@ -322,7 +361,26 @@ void NetService::handleDisconnection()
     emit updateStatus(false, "");
 }
 
+bool NetService::isConnected()
+{
+    if (client) return client->isConnected();
+    if (isServer()) return true;
+    return false;
+}
+
 bool NetService::isServer()
 {
     return server != nullptr;
 }
+
+// QString bitString;
+// for (char byte : data) {
+//     // Convert each byte to an unsigned integer
+//     unsigned char ubyte = static_cast<unsigned char>(byte);
+//     // Loop through each bit (MSB first)
+//     for (int i = 7; i >= 0; --i) {
+//         bitString.append(((ubyte >> i) & 1) ? '1' : '0');
+//     }
+// }
+// qDebug() << bitString;
+// qDebug() << "P: " << p << "I: " << i << "D: " << d;

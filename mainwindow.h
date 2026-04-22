@@ -5,6 +5,8 @@
 
 #include "ListWithWxtremes.hpp"
 #include "WarstwaUslug.h"
+#include "connectionwindow.h"
+#include "netservice.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -78,10 +80,22 @@ private slots:
 
     void on_checkBox_nasycenie_clicked();
 
+    void on_actionPolacz_triggered();
+
+    void on_pidWewn_clicked();
+
+    void on_pidZewn_clicked();
+
 private:
     Ui::MainWindow *ui;
     WarstaUslug uslugi;
-    ParametryARX* paraARX;
+    ParametryARX* paraARX = nullptr;
+    ConnectionWindow *m_connWindow = nullptr;
+
+    void syncPidToNetwork();
+    void syncGenToNetwork();
+    void syncARXToNetwork();
+    void applyNetworkRoleBlocking();
 
     ListWithExtremes zadana;
     ListWithExtremes regulowana;

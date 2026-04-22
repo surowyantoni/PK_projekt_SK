@@ -13,6 +13,7 @@ WarstaUslug::WarstaUslug()
     , generator(GeneratorWartosci())
     , uar(UAR(&arx, &generator, &pid))
     , timer(this)
+    , netService(new NetService(this, this))
 {
     timer.setTimerType(Qt::PreciseTimer); // żeby działał dokładniej
     dziala = dziala.get(); // wywoalanie settera - ustawienie timera

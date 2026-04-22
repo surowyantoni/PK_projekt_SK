@@ -1,4 +1,5 @@
 #include "mainwindow.h"
+#include "connectionwindow.h"
 #include "parametryarx.h"
 #include "ui_mainwindow.h"
 
@@ -27,67 +28,109 @@ MainWindow::MainWindow(QWidget *parent)
 }
 void MainWindow::externalUIUpdate()
 {
-    //Generator
+    // BLOKADA SYGNAŁÓW (pętla sieciowa)
+    const QSignalBlocker bAmp(ui->amplituda);
+    const QSignalBlocker bOff(ui->skladowaStala);
+    const QSignalBlocker bDuty(ui->wypelnienie);
+    const QSignalBlocker bPer(ui->czasTR);
+    const QSignalBlocker bP(ui->spinBox_wzmocnienie);
+    const QSignalBlocker bI(ui->stalaCalkowa);
+    const QSignalBlocker bD(ui->stalaRozniczkowa);
+    const QSignalBlocker bMin(ui->nasycenieMin);
+    const QSignalBlocker bMax(ui->nasycenieMax);
+    const QSignalBlocker bHyst(ui->szerokoscHisterezy);
+    const QSignalBlocker bOnOffU(ui->wartoscSterowaniaON);
+
+    // --- Generator ---
     ui->amplituda->setValue(uslugi.generator.amplituda);
     ui->skladowaStala->setValue(uslugi.generator.skladowaStala);
     ui->wypelnienie->setValue(uslugi.generator.wypelnienie);
-    bool sinus = false, prost = false;
-    switch (uslugi.generator.typSygnalu)
-    {
-    case GeneratorWartosci::TypSygnalu::KWADRAT:
-        prost = true;
-        break;
-    case GeneratorWartosci::TypSygnalu::SINUS:
-        sinus = true;
-        break;
-    }
-    ui->radioButton_prostokatny->setChecked(prost);
-    ui->radioButton_sinusoidalny->setChecked(sinus);
-    ui->czasTR->setValue(miliToSeconds(uslugi.generator.okres * uslugi.interwal));
 
+    ui->radioButton_sinusoidalny->setChecked(uslugi.generator.typSygnalu == GeneratorWartosci::TypSygnalu::SINUS);
+    ui->radioButton_prostokatny->setChecked(uslugi.generator.typSygnalu == GeneratorWartosci::TypSygnalu::KWADRAT);
 
-    bool onoff = false, pid = false;
-    switch (uslugi.Regulacja())
-    {
-    case UAR::RodzajSterowania::OnOff:
-        onoff = true;
-        break;
-    case UAR::RodzajSterowania::PID:
-        pid = true;
-        break;
-    }
-    ui->radioButton_pid->setChecked(pid);
-    ui->radioButton_onoff->setChecked(onoff);
+    ui->czasTR->setValue((double)(uslugi.generator.okres * uslugi.interwal) / 1000.0);
 
+    // --- Wybór Regulatora ---
+    ui->radioButton_pid->setChecked(uslugi.Regulacja() == UAR::RodzajSterowania::PID);
+    ui->radioButton_onoff->setChecked(uslugi.Regulacja() == UAR::RodzajSterowania::OnOff);
 
-    // RegulatorPID
+    // --- Regulator PID ---
     ui->spinBox_wzmocnienie->setValue(uslugi.pid.k);
     ui->stalaCalkowa->setValue(uslugi.pid.Ti);
     ui->stalaRozniczkowa->setValue(uslugi.pid.Td);
 
-    bool pidZewn = false, pidWewn = false;
-    switch (uslugi.pid.sposobLiczeniaCalki)
-    {
-    case RegulatorPID::Zewnetrzne:
-        pidZewn = true;
-        break;
-    case RegulatorPID::Wewnetrzne:
-        pidWewn = true;
-        break;
-    }
-    ui->pidWewn->setChecked(pidWewn);
-    ui->pidZewn->setChecked(pidZewn);
+    ui->pidWewn->setChecked(uslugi.pid.sposobLiczeniaCalki == RegulatorPID::Wewnetrzne);
+    ui->pidZewn->setChecked(uslugi.pid.sposobLiczeniaCalki == RegulatorPID::Zewnetrzne);
+
     ui->nasycenieMax->setValue(uslugi.pid.limityWyjscia.getMax());
     ui->nasycenieMin->setValue(uslugi.pid.limityWyjscia.getMin());
     ui->checkBox_nasycenie->setChecked(uslugi.pid.antiWindupActive);
     ui->checkBox_ograniczenie->setChecked(uslugi.pid.limityWyjscia.getActive());
 
-
-    // Regulator OnOff
+    // --- Regulator OnOff ---
     ui->szerokoscHisterezy->setValue(uslugi.onOff.histereza);
     ui->wartoscSterowaniaON->setValue(uslugi.onOff.wartoscSterowania);
 
+    if (paraARX)
+       paraARX->refreshFromService();
+
+    // BLOKOWANIE GUI ZALEŻNIE OD ROLI
+    applyNetworkRoleBlocking();
 }
+
+void MainWindow::applyNetworkRoleBlocking()
+{
+    // Pobranie informacji o połączeniu z Warstwy Usług (poprzez NetService)
+    bool connected = uslugi.getNetService() && uslugi.getNetService()->isConnected();
+    bool isServer = uslugi.getNetService() && uslugi.getNetService()->isServer();
+
+    if (!connected) {
+        // TRYB STACJONARNY: Wszystko odblokowane
+        ui->groupBox->setEnabled(true);
+        ui->groupBox_onoff->setEnabled(true);
+        ui->groupBox_regulacja->setEnabled(true);
+        ui->groupBox_wykresy->setEnabled(true);
+        ui->groupBox_2->setEnabled(true);
+        ui->groupBox_3->setEnabled(true);
+        ui->pushButton_arx->setEnabled(true);
+        ui->pushButton_startStop->setEnabled(true);
+        ui->pushButton_reset->setEnabled(true);
+        return;
+    }
+
+    if (isServer)
+    {
+        // ROLA: REGULATOR (Serwer)
+        ui->groupBox->setEnabled(true);
+        ui->groupBox_onoff->setEnabled(true);
+        ui->groupBox_regulacja->setEnabled(true);
+        ui->groupBox_wykresy->setEnabled(true);
+        ui->groupBox_2->setEnabled(true);
+        ui->groupBox_3->setEnabled(true);
+        ui->pushButton_arx->setEnabled(true);
+        ui->pushButton_startStop->setEnabled(true);
+        ui->pushButton_reset->setEnabled(true);
+
+        ui->pushButton_arx->setEnabled(false);
+    } else
+    {
+        // ROLA: OBIEKT (Klient)
+        ui->groupBox->setEnabled(false);
+        ui->groupBox_onoff->setEnabled(false);
+        ui->groupBox_regulacja->setEnabled(false);
+        ui->groupBox_wykresy->setEnabled(false);
+        ui->groupBox_2->setEnabled(false);
+        ui->groupBox_3->setEnabled(false);
+        ui->pushButton_arx->setEnabled(false);
+        ui->pushButton_startStop->setEnabled(false);
+        ui->pushButton_reset->setEnabled(false);
+
+        ui->pushButton_arx->setEnabled(true);
+
+    }
+}
+
 void MainWindow::chartsUpdate(UAR::Tick tick, uint32_t czas)
 {
     // qDebug() << "CZas:" << czas << "TICK:" << tick.wartoscZadana;
@@ -116,30 +159,44 @@ MainWindow::~MainWindow()
 void MainWindow::on_pushButton_startStop_clicked()
 {
     uslugi.dziala = !uslugi.dziala;
+
+    if (uslugi.getNetService() && uslugi.getNetService()->isConnected())
+    {
+        int cmd = uslugi.dziala ? 1 : 0;
+        uslugi.getNetService()->sendSimCmd(cmd);
+    }
 }
 
 
 void MainWindow::on_spinBox_wzmocnienie_editingFinished()
 {
     uslugi.pid.k = ui->spinBox_wzmocnienie->value();
+
+    syncPidToNetwork();
 }
 
 
 void MainWindow::on_stalaCalkowa_editingFinished()
 {
     uslugi.pid.Ti = ui->stalaCalkowa->value();
+
+    syncPidToNetwork();
 }
 
 
 void MainWindow::on_stalaRozniczkowa_editingFinished()
 {
     uslugi.pid.Td = ui->stalaRozniczkowa->value();
+
+    syncPidToNetwork();
 }
 
 
 void MainWindow::on_resetPID_clicked()
 {
     uslugi.pid.resetCzesciCalkujacej();
+
+    syncPidToNetwork();
 }
 
 
@@ -184,49 +241,55 @@ void MainWindow::on_interwal_editingFinished()
 void MainWindow::on_czasTR_editingFinished()
 {
     uslugi.generator.okres = secondsToMili(ui->czasTR->value()) / uslugi.interwal;
+    syncGenToNetwork();
 }
 
 
 void MainWindow::on_amplituda_editingFinished()
 {
     uslugi.generator.amplituda = ui->amplituda->value();
+    syncGenToNetwork();
 }
 
 
 void MainWindow::on_skladowaStala_editingFinished()
 {
     uslugi.generator.skladowaStala = ui->skladowaStala->value();
+    syncGenToNetwork();
 }
 
 
 void MainWindow::on_wypelnienie_editingFinished()
 {
     uslugi.generator.wypelnienie = ui->wypelnienie->value();
+    syncGenToNetwork();
 }
 
 
 void MainWindow::on_radioButton_prostokatny_clicked()
 {
     uslugi.generator.typSygnalu = GeneratorWartosci::TypSygnalu::KWADRAT;
+    syncGenToNetwork();
 }
 
 
 void MainWindow::on_radioButton_sinusoidalny_clicked()
 {
     uslugi.generator.typSygnalu = GeneratorWartosci::TypSygnalu::SINUS;
+    syncGenToNetwork();
 }
-
-
 
 void MainWindow::on_nasycenieMax_editingFinished()
 {
     uslugi.pid.limityWyjscia.setMax(ui->nasycenieMax->value());
+    syncPidToNetwork();
 }
 
 
 void MainWindow::on_nasycenieMin_editingFinished()
 {
     uslugi.pid.limityWyjscia.setMin(ui->nasycenieMin->value());
+    syncPidToNetwork();
 }
 
 
@@ -248,17 +311,81 @@ void MainWindow::on_pushButton_reset_clicked()
     pidD.clear();
     uchyb.clear();
     sterowanie.clear();
+
+    if (uslugi.getNetService() && uslugi.getNetService()->isConnected())
+        uslugi.getNetService()->sendSimCmd(2);
 }
 
 
 void MainWindow::on_checkBox_ograniczenie_clicked()
 {
     uslugi.pid.limityWyjscia.setActive(ui->checkBox_ograniczenie->checkState() == Qt::CheckState::Checked);
+    syncPidToNetwork();
 }
 
 
 void MainWindow::on_checkBox_nasycenie_clicked()
 {
     uslugi.pid.antiWindupActive = ui->checkBox_nasycenie->checkState() == Qt::CheckState::Checked;
+    syncPidToNetwork();
+}
+
+void MainWindow::on_actionPolacz_triggered()
+{
+    if (!m_connWindow)
+        m_connWindow = new ConnectionWindow(uslugi.getNetService(), this);
+
+    m_connWindow->show();
+    m_connWindow->raise();
+    m_connWindow->activateWindow();
+}
+
+void MainWindow::on_pidZewn_clicked()
+{
+    uslugi.pid.sposobLiczeniaCalki = RegulatorPID::Zewnetrzne;
+    syncPidToNetwork();
+}
+
+void MainWindow::on_pidWewn_clicked()
+{
+    uslugi.pid.sposobLiczeniaCalki = RegulatorPID::Wewnetrzne;
+    syncPidToNetwork();
+}
+
+void MainWindow::syncPidToNetwork()
+{
+    if (uslugi.getNetService() && uslugi.getNetService()->isConnected())
+        uslugi.getNetService()->sendPidConfig(uslugi.pid.k, uslugi.pid.Ti, uslugi.pid.Td, static_cast<int>(uslugi.pid.sposobLiczeniaCalki.get()), ui->nasycenieMin->value(), ui->nasycenieMax->value());
+}
+
+void MainWindow::syncGenToNetwork()
+{
+    if (uslugi.getNetService() && uslugi.getNetService()->isConnected())
+    {
+        int typ = static_cast<int>(uslugi.generator.typSygnalu.get());
+        double amp = uslugi.generator.amplituda;
+        double offset = uslugi.generator.skladowaStala;
+        double duty = uslugi.generator.wypelnienie;
+        double periodSec = uslugi.generator.okres;
+
+        uslugi.getNetService()->sendGenConfig(typ, amp, periodSec, offset, duty);
+    }
+}
+
+void MainWindow::syncARXToNetwork()
+{
+    if (uslugi.getNetService() && uslugi.getNetService()->isConnected())
+    {
+        QVector<double> vecA, vecB;
+
+        for (const auto& w : uslugi.arx.wspolczynniki.get())
+        {
+            vecA.append(w.A);
+            vecB.append(w.B);
+        }
+
+        uslugi.getNetService()->sendArxConfig(vecA, vecB, uslugi.arx.k, uslugi.arx.z, uslugi.arx.limityZadana.getMin(), uslugi.arx.limityZadana.getMax(),
+                        uslugi.arx.limityRegulowana.getMin(), uslugi.arx.limityRegulowana.getMax());
+    }
 }
 

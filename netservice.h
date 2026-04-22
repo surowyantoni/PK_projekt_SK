@@ -6,13 +6,16 @@
 #include <QObject>
 #include <QUdpSocket>
 
+class WarstaUslug;
+
 class NetService : public QObject
 {
     Q_OBJECT
 public:
     bool isServer();
 
-    explicit NetService(QObject *parent = nullptr);
+    //explicit NetService(QObject *parent = nullptr);
+    explicit NetService(WarstaUslug *u, QObject *parent = nullptr);
 
     void startAsServer(int port);                               //Startuj jako serwer
     void startAsClient(QString ip, int port);                   //Startuj jako klient
@@ -27,9 +30,11 @@ public:
     void sendPidConfig(double p, double i, double d, int mode, double min, double max);
     void sendGenConfig(int type, double amp, double period, double offset, double duty);
     void sendArxConfig(const QVector<double>& A, const QVector<double>& B, int k, double sigma, double minU, double maxU, double minY, double maxY);
-    void sendSimCmd(quint8 cmd);
+    void sendSimCmd(int cmd);
 
-signals:                                                      // Do GUI:
+    bool isConnected();
+
+signals:                                                        // Do GUI:
     void updateStatus(bool connected, QString remoteIP = "");   //Ustaw status
     void logAppend(QString log);                                //Wypisz log
 
@@ -65,6 +70,8 @@ private:
     void stopAllLocal();
     QString remoteIP;
     int m_packetCounter = 0;
+
+    WarstaUslug *uslugi;
 };
 
 #endif // NETSERVICE_H

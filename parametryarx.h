@@ -40,6 +40,8 @@ public:
     double readRegMax();
     double readRegMin();
 
+    void refreshFromService();
+
 private slots:
     void on_addAreaVectorA_clicked();
 

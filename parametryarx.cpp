@@ -201,6 +201,46 @@ double ParametryARX::readMin()
     return ui->odWartoscSterowania->value();
 }
 
+void ParametryARX::refreshFromService()
+{
+    const QSignalBlocker bK(ui->opoznienie);
+    const QSignalBlocker bZ(ui->szum);
+    const QSignalBlocker bUmin(ui->odWartoscSterowania);
+    const QSignalBlocker bUmax(ui->doWartoscSterowania);
+    const QSignalBlocker bYmin(ui->odWartoscRegulowania);
+    const QSignalBlocker bYmax(ui->doWartoscRegulowania);
+
+    ARX &model = m_parent->uslugi.arx;
+
+    ui->opoznienie->setValue(model.k);
+    ui->szum->setValue(model.z);
+
+    ui->odWartoscSterowania->setValue(model.limityZadana.getMin());
+    ui->doWartoscSterowania->setValue(model.limityZadana.getMax());
+    ui->odWartoscRegulowania->setValue(model.limityRegulowana.getMin());
+    ui->doWartoscRegulowania->setValue(model.limityRegulowana.getMax());
+
+    // CZYSZCZENIE I ODBUDOWA DYNAMICZNYCH PÓL WEKTORÓW (A i B)
+    QLayoutItem *item;
+    while ((item = ui->verticalFrame->layout()->takeAt(0)) != nullptr)
+    {
+        if (item->widget()) delete item->widget();
+        delete item;
+    }
+    while ((item = ui->verticalFrame_2->layout()->takeAt(0)) != nullptr)
+    {
+        if (item->widget()) delete item->widget();
+        delete item;
+    }
+
+    // Dodanie nowych pól na podstawie współczynników z serwisu
+    for (const auto& w : model.wspolczynniki.get())
+    {
+        addNewFieldVectorA(w.A);
+        addNewFieldVectorB(w.B);
+    }
+}
+
 ParametryARX::~ParametryARX()
 {
     delete ui;
@@ -238,4 +278,7 @@ void ParametryARX::on_buttonBox_accepted()
     m_parent->uslugi.arx.limityZadana.setActive(ui->checkboxOgraniczenia->isChecked());
 
     m_parent->ui->pushButton_arx->setEnabled(true);
+
+    m_parent->syncARXToNetwork();
+    m_parent->uslugi.updateUI();
 }

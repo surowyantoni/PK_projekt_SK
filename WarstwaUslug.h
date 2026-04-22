@@ -4,6 +4,7 @@
 #include "RegulatorOnOff.h"
 #include "RegulatorPID.h"
 #include "UAR.h"
+#include "netservice.h"
 #include "qtimer.h"
 #include "utils.hpp"
 
@@ -54,6 +55,8 @@ public:
     GeneratorWartosci generator;
     WarstaUslug();
 
+    NetService* getNetService() { return netService; }
+
     void reset();
     void Regulacja(UAR::RodzajSterowania regulacja);
     UAR::RodzajSterowania Regulacja();
@@ -63,6 +66,7 @@ signals:
 private:
     UAR uar;
     QTimer timer;
+    NetService *netService;
 private slots:
     void symuluj();
     void wczytajZPliku();
