@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1000</width>
-    <height>500</height>
+    <width>774</width>
+    <height>516</height>
    </rect>
   </property>
   <layout class="QVBoxLayout" name="mainLayout" stretch="1,1,4,0">
@@ -21,52 +21,32 @@
       </widget>
      </item>
      <item>
-      <widget class="QComboBox" name="comboMode">
+      <layout class="QVBoxLayout" name="verticalLayout">
        <item>
-        <property name="text">
-         <string>STACJONARNY</string>
-        </property>
+        <widget class="QRadioButton" name="radioClient">
+         <property name="text">
+          <string>Klient</string>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
+        </widget>
        </item>
        <item>
-        <property name="text">
-         <string>SIECIOWY</string>
-        </property>
+        <widget class="QRadioButton" name="radioServer">
+         <property name="text">
+          <string>Serwer</string>
+         </property>
+        </widget>
        </item>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="btnConnect">
-       <property name="text">
-        <string>Połącz</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="btnDisconnect">
-       <property name="text">
-        <string>Rozłącz</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="btnStart">
-       <property name="enabled">
-        <bool>false</bool>
-       </property>
-       <property name="text">
-        <string>Start</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="btnStop">
-       <property name="enabled">
-        <bool>false</bool>
-       </property>
-       <property name="text">
-        <string>Stop</string>
-       </property>
-      </widget>
+       <item>
+        <widget class="QRadioButton" name="radioLokalny">
+         <property name="text">
+          <string>Lokalny</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
      </item>
      <item>
       <spacer name="spacerTop">
@@ -81,34 +61,68 @@
        </property>
       </spacer>
      </item>
+     <item>
+      <widget class="QPushButton" name="btnConnect">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="text">
+        <string>Połącz</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btnDisconnect">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="text">
+        <string>Rozłącz</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btnStart">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="text">
+        <string>Start</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btnStop">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="text">
+        <string>Stop</string>
+       </property>
+      </widget>
+     </item>
     </layout>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="middleLayout" stretch="0,1,1,1,1,0,1,0,1,0,1,4,0,1,1">
-     <item>
-      <widget class="QLabel" name="labelRole">
-       <property name="text">
-        <string>Rola:</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QRadioButton" name="radioServer">
-       <property name="text">
-        <string>Serwer</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QRadioButton" name="radioClient">
-       <property name="text">
-        <string>Klient</string>
-       </property>
-       <property name="checked">
-        <bool>true</bool>
-       </property>
-      </widget>
-     </item>
+    <layout class="QHBoxLayout" name="middleLayout" stretch="1,1,0,1,0,1,0,1,0,1,2,1,5,3">
      <item>
       <widget class="QLabel" name="labelIP">
        <property name="text">
@@ -166,19 +180,17 @@
       </widget>
      </item>
      <item>
-      <widget class="QComboBox" name="comboIP">
-       <property name="currentText">
-        <string>127.0.0.1</string>
+      <spacer name="horizontalSpacer_2">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
        </property>
-       <property name="currentIndex">
-        <number>0</number>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
        </property>
-       <item>
-        <property name="text">
-         <string>127.0.0.1</string>
-        </property>
-       </item>
-      </widget>
+      </spacer>
      </item>
      <item>
       <widget class="QLabel" name="labelPort">
@@ -198,7 +210,65 @@
       </widget>
      </item>
      <item>
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <layout class="QVBoxLayout" name="verticalLayout_2">
+       <item>
+        <widget class="QLabel" name="label">
+         <property name="text">
+          <string>Znalezione urządzenia:</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QComboBox" name="comboIP">
+         <property name="currentText">
+          <string>127.0.0.1</string>
+         </property>
+         <property name="currentIndex">
+          <number>0</number>
+         </property>
+         <item>
+          <property name="text">
+           <string>127.0.0.1</string>
+          </property>
+         </item>
+        </widget>
+       </item>
+       <item>
+        <spacer name="verticalSpacer">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+     </item>
+     <item>
       <widget class="QPushButton" name="btnSearch">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
        <property name="text">
         <string>Szukaj urządzeń</string>
        </property>
@@ -258,32 +328,43 @@
          </widget>
         </item>
         <item>
-         <widget class="QLabel" name="labelMode">
+         <widget class="QLabel" name="labelPacketsSent">
           <property name="text">
-           <string>Opóźnienie pakietów -</string>
+           <string>Przesłanych pakietów -</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="labelPacketsReceived">
+          <property name="text">
+           <string>Odebranych pakietów -</string>
           </property>
          </widget>
         </item>
         <item>
          <widget class="QLabel" name="labelPing">
           <property name="text">
-           <string>Opóźnienie sieci: -</string>
+           <string>Ping -</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QLabel" name="labelPackets">
-          <property name="text">
-           <string>Pakiety/s: -</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QProgressBar" name="progressBar">
-          <property name="value">
-           <number>0</number>
-          </property>
-         </widget>
+         <layout class="QHBoxLayout" name="horizontalLayout_3">
+          <item>
+           <widget class="QLabel" name="label_2">
+            <property name="text">
+             <string>Zapełneinie bufora:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QProgressBar" name="progressBarOpoznienie">
+            <property name="value">
+             <number>0</number>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </item>
        </layout>
       </widget>
@@ -316,6 +397,26 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>radioClient</tabstop>
+  <tabstop>radioServer</tabstop>
+  <tabstop>radioLokalny</tabstop>
+  <tabstop>btnConnect</tabstop>
+  <tabstop>btnDisconnect</tabstop>
+  <tabstop>btnStart</tabstop>
+  <tabstop>btnStop</tabstop>
+  <tabstop>editIP</tabstop>
+  <tabstop>editIP2</tabstop>
+  <tabstop>editIP3</tabstop>
+  <tabstop>editIP4</tabstop>
+  <tabstop>spinPort</tabstop>
+  <tabstop>comboIP</tabstop>
+  <tabstop>btnSearch</tabstop>
+  <tabstop>logBox</tabstop>
+  <tabstop>editMsg</tabstop>
+  <tabstop>btnSend</tabstop>
+  <tabstop>btnClear</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

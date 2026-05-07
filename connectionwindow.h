@@ -22,15 +22,14 @@ protected:
     void closeEvent(QCloseEvent *event) override;
 
 private slots:
-    void on_btnConnect_clicked();                   //Połącz -> serwis
-    void on_btnDisconnect_clicked();                //Rozłącz -> serwis
-    void on_btnSearch_clicked();                    //Szukaj urządzeń -> serwis
-    void on_radioServer_toggled(bool checked);      //Server start/stop -> serwis
+    void on_btnConnect_clicked();
+    void on_btnDisconnect_clicked();
+    void on_btnSearch_clicked();
 
     void log(QString text);                         //Logowanie
     void updateStatus(bool connected, QString ip);  //UI status
-    void onAuthRequired(QString ip);                //Wyrzucenie okna
-    void onAuthError(int attempt);                  //Reakcja na zły kod
+    void onAuthRequired();                //Wyrzucenie okna
+    void onAuthError(QString errMsg);                  //Reakcja na zły kod
     void onCodeEntryRequired();                     //Prośba o podanie kodu
     void onDeviceFound(QString ip);                 //Wpisanie znalezionychdo comboBox
     void on_comboIP_currentTextChanged(const QString &arg1);
@@ -41,9 +40,13 @@ private slots:
 
     void on_btnStop_clicked();
 
-    void on_comboMode_currentIndexChanged(int index);
-
     void on_btnSend_clicked();
+
+    void on_radioLokalny_clicked();
+
+    void on_radioServer_clicked();
+
+    void on_radioClient_clicked();
 
 private:
     Ui::ConnectionWindow *ui;

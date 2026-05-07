@@ -8,7 +8,7 @@ MinMaxClamp::MinMaxClamp(double min, double max, bool active)
     this->max = max;
     this->min = min;
 }
-bool MinMaxClamp::getActive()
+bool MinMaxClamp::getActive() const
 {
     return active;
 }
@@ -27,11 +27,11 @@ void MinMaxClamp::setMax(double value)
     assert(min < value);
     this->max = value;
 }
-double MinMaxClamp::getMin()
+double MinMaxClamp::getMin() const
 {
     return min;
 }
-double MinMaxClamp::getMax()
+double MinMaxClamp::getMax() const
 {
     return max;
 }
@@ -52,37 +52,4 @@ void MinMaxClamp::setMinMax(double min, double max)
     this->max = max;
     this->min = min;
 }
-// template<typename T>
-// Property<T>::Property(T& initialValue)
-//     :value(initialValue)
-// {}
 
-// template<typename T>
-// void Property<T>::set(const T &value)
-// {
-//     this->value = value;
-// }
-
-// template<typename T>
-// T Property<T>::get() const
-// {
-//     return this->value;
-// }
-
-// template<typename T>
-// void Property<T>::operator=(const T &value)
-// {
-//     set(value);
-// }
-
-// template<typename T>
-// Property<T>::operator T() const
-// {
-//     return get();
-// }
-
-// template<typename T>
-// PropertyWithAccess<T>::PropertyWithAccess(void* owner, T &initalValue)
-//     : Property<T>(initalValue)
-//     , owner(owner)
-// {}

@@ -6,6 +6,8 @@
 class GeneratorWartosci
 {
 public:
+    SERIALIZABLE
+
     enum class TypSygnalu {
         KWADRAT = 0,
         SINUS = 1,
@@ -17,11 +19,9 @@ public:
                       double wypelnienie = 0.5);
 
 
-    double generuj();
-    QJsonObject toJSON();
-    GeneratorWartosci fromJSON(QJsonObject json);
-
-    PROPERTY(uint32_t, Okres)
+    double generuj(uint32_t przeskok);
+    PROP(uint32_t, GeneratorWartosci)
+        GETTER(uint32_t)
         void set(const uint32_t& value)
         {
             assert(value >= 1);
@@ -29,7 +29,8 @@ public:
         }
     } okres;
 
-    PROPERTY(double, Amplituda)
+    PROP(double, GeneratorWartosci)
+        GETTER(double)
         void set(const double& value)
         {
             assert(value >= 0.0);
@@ -37,10 +38,13 @@ public:
         }
     } amplituda;
 
-    PROPERTY(double, SkladowaStala)
+    PROP(double, GeneratorWartosci)
+        GETTER(double)
+        SETTER(double)
     } skladowaStala;
 
-    PROPERTY(double, Wypelnienie)
+    PROP(double, GeneratorWartosci)
+        GETTER(double)
         void set(const double& value)
         {
             assert(value >= 0.0);
@@ -49,7 +53,9 @@ public:
         }
     } wypelnienie;
 
-    PROPERTY(TypSygnalu, TypSygnaluGeneratora)
+    PROP(TypSygnalu, GeneratorWartosci)
+        GETTER(TypSygnalu)
+        SETTER(TypSygnalu)
     } typSygnalu;
     void reset();
 private:

@@ -1,4 +1,5 @@
 #pragma once
+#include "qjsonobject.h"
 #include "utils.hpp"
 #include <cassert>
 
@@ -7,7 +8,9 @@ class RegulatorOnOff
     enum class Stan {Off, On};
     Stan stan;
 public:
-    PROPERTY(double, HisterezaRegulatora)
+    SERIALIZABLE
+    PROP(double, RegulatorOnOff)
+        GETTER(double)
         void set(const double& value)
         {
             assert(value > 0.0);
@@ -18,7 +21,9 @@ public:
         }
     } histereza;
 
-    PROPERTY(double, WartoscSterowaniaRegulatoraUON)
+    PROP(double, RegulatorOnOff)
+        GETTER(double)
+        SETTER(double)
     } wartoscSterowania;
 
     RegulatorOnOff(double wartoscSterowania = 2.0, double histereza = 0.1);

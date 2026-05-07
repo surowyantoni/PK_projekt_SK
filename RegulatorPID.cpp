@@ -1,7 +1,7 @@
 #include "RegulatorPID.h"
 #include "qdebug.h"
 #include "qglobal.h"
-#include <format>
+#include <qiodevice.h>
 
 
 PIDTick::operator double() const noexcept
@@ -13,20 +13,20 @@ PIDTick RegulatorPID::symuluj(double uchyb)
 {
     PIDTick tick;
 
-    tick.P = k * uchyb;
+    tick.P = k.get() * uchyb;
 
-    if(Ti == 0.0)
+    if(Ti.get() == 0.0)
     {
         tick.I = 0.0;
     }
     else
     {
         sumaUchybowCalkowanieZewnetrzne += uchyb;
-        sumaUchybowCalkowanieWewnetrzne += (double)uchyb / Ti;
-        switch (sposobLiczeniaCalki)
+        sumaUchybowCalkowanieWewnetrzne += (double)uchyb / Ti.get();
+        switch (sposobLiczeniaCalki.get())
         {
         case Zewnetrzne:
-            tick.I = (double)sumaUchybowCalkowanieZewnetrzne / Ti;
+            tick.I = (double)sumaUchybowCalkowanieZewnetrzne / Ti.get();
             break;
         case Wewnetrzne:
             tick.I = sumaUchybowCalkowanieWewnetrzne;
@@ -34,10 +34,7 @@ PIDTick RegulatorPID::symuluj(double uchyb)
         }
     }
 
-
-
-    tick.D = Td * (uchyb - poprzedniUchyb);
-    // qDebug() << std::format("P= {} I = {} D= {} ", tick.P, tick.I, tick.D).c_str();
+    tick.D = Td.get() * (uchyb - poprzedniUchyb);
     poprzedniUchyb = uchyb;
     return tick;
 }
@@ -45,19 +42,16 @@ PIDTick RegulatorPID::symuluj(double uchyb)
 void RegulatorPID::zmienSposobLiczeniaCalki(SposobLiczeniaCalki value)
 {
     // nic do roboty
-    if(value == this->sposobLiczeniaCalki)
+    if(value == sposobLiczeniaCalki.get())
         return;
 
     switch (value)
     {
     case SposobLiczeniaCalki::Wewnetrzne:
-        sumaUchybowCalkowanieWewnetrzne = sumaUchybowCalkowanieZewnetrzne / Ti;
+        sumaUchybowCalkowanieWewnetrzne = sumaUchybowCalkowanieZewnetrzne / Ti.get();
         break;
     case SposobLiczeniaCalki::Zewnetrzne:
-        sumaUchybowCalkowanieZewnetrzne = sumaUchybowCalkowanieWewnetrzne * Ti;
-        break;
-    default:
-        assert(1 == 0); // wyrzuć błąd
+        sumaUchybowCalkowanieZewnetrzne = sumaUchybowCalkowanieWewnetrzne * Ti.get();
         break;
     }
 }
@@ -65,10 +59,10 @@ RegulatorPID::RegulatorPID(double k, double Ti, double Td,
              MinMaxClamp ograniczenia, bool antiWindupActive)
     : limityWyjscia(ograniczenia)
     , antiWindupActive(antiWindupActive)
-    , k(k)
-    , Ti(Ti)
-    , Td(Td)
-    , sposobLiczeniaCalki(this, SposobLiczeniaCalki::Wewnetrzne)
+    , k{k, this}
+    , Ti{Ti, this}
+    , Td{Td, this}
+    , sposobLiczeniaCalki{SposobLiczeniaCalki::Wewnetrzne, this}
     , poprzedniUchyb(0.0)
     , sumaUchybowCalkowanieZewnetrzne(0.0)
     , sumaUchybowCalkowanieWewnetrzne(0.0)
@@ -84,4 +78,30 @@ void RegulatorPID::resetCzesciCalkujacej()
 {
     sumaUchybowCalkowanieWewnetrzne = 0.0;
     sumaUchybowCalkowanieZewnetrzne = 0.0;
+}
+
+QJsonObject RegulatorPID::toJSON() const
+{
+    return QJsonObject();
+}
+void RegulatorPID::fromJSON(QJsonObject& json)
+{
+
+}
+QByteArray RegulatorPID::toByteArray() const
+{
+    QByteArray data;
+    QDataStream s(&data, QIODevice::WriteOnly);
+    s << k.get() << Ti.get() << Td.get() << sposobLiczeniaCalki.get()
+      << limityWyjscia.getMin() << limityWyjscia.getMax()
+      << limityWyjscia.getActive() << antiWindupActive.get();
+    return data;
+}
+void RegulatorPID::fromByteArray(QByteArray& data)
+{
+    QDataStream s(&data, QIODevice::ReadOnly);
+    double limMax, limMin;
+    bool lim;
+    s >> k.value >> Ti.value >> Td.value >> sposobLiczeniaCalki.value >> limMin >> limMax >> lim >> antiWindupActive.value;
+    limityWyjscia = MinMaxClamp(limMin, limMax, lim);
 }

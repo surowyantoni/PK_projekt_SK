@@ -1,22 +1,174 @@
 #include "netservice.h"
 #include "WarstwaUslug.h"
-#include "RegulatorPID.h"
 #include "ProtocolDef.h"
 #include <QNetworkDatagram>
 #include <QDataStream>
+#include "DEFINITIONS.hpp"
+#include "qtcpsocket.h"
 
-NetService::NetService(WarstaUslug *u, QObject *parent)
-    : QObject(parent), uslugi(u)
+NetService::NetService(WarstaUslug *parent)
+    : udp{new QUdpSocket(this)}
+    , uslugi{parent}
 {
-    udp = new QUdpSocket(this);
-    udp->bind(discoveryPort, QUdpSocket::ShareAddress);
+    udp->bind(CONSTS::NET::DISCOVERY_PORT, QUdpSocket::ShareAddress);
     connect(udp, &QUdpSocket::readyRead, this, &NetService::processDiscoveryUdp);
 }
 
 void NetService::searchDevices()
 {
-    udp->writeDatagram("UAR_QUERY", QHostAddress::Broadcast, discoveryPort);
+    udp->writeDatagram("UAR_QUERY", QHostAddress::Broadcast, CONSTS::NET::DISCOVERY_PORT);
     emit logAppend("Wysłano zapytanie DISCOVERY...");
+}
+
+void NetService::chooseAuthWithCode(int code)
+{
+    currentAuthCode = code;
+    unsuccessfullAuthAttempts = 0;
+    authenticated = false;
+    sendDataPackage(AUTH_NEEDED);
+    emit logAppend("Wysłano prośbę o wpisanie kodu do pratnera.");
+}
+
+void NetService::chooseAuthWithoutCode()
+{
+    sendDataPackage(AUTH_SUCCESS);
+    emit connectionStatusChanged(true, remoteIP);
+    emit logAppend("Połączono w trybie bez autoryzacji.");
+}
+void  NetService::chooseAuthReject()
+{
+    sendDataPackage(DISCONNECT_NOTIFY);
+    emit connectionStatusChanged(false, "");
+    emit logAppend("Odrzucono połączenie z klientem");
+}
+void NetService::authCodeVerification(int code)
+{
+    sendDataPackage(AUTH_CODE, QByteArray::number(code));
+}
+
+void NetService::startAsServer(int port)
+{
+    handleDisconnection();
+    server = new QTcpServer(this);
+
+    connect(server, &QTcpServer::newConnection, this, &NetService::handleNewClient);
+    if (server->listen(QHostAddress::Any, port))
+        emit logAppend("Serwer nasłuchuje na porcie " + QString::number(port));
+
+    uslugi->trybDzialania.set(WarstaUslug::TrybDzialania::NET_REG);
+    emit uslugi->updateUI();
+}
+
+void NetService::connectAsClient(QString ip, int port)
+{
+    handleDisconnection();
+    socket = new QTcpSocket(this);
+
+    connect(socket, &QTcpSocket::connected, this, [this]()
+            {
+                sendDataPackage(CONNECTION_REQUEST);
+            });
+    connect(socket, &QTcpSocket::readyRead, this, [this]()
+            {
+                processDataPackage(socket->readAll());
+            });
+    connect(socket, &QTcpSocket::disconnected, this, &NetService::handleDisconnection);
+    socket->connectToHost(ip, port);
+    remoteIP = ip;
+
+    uslugi->trybDzialania.set(WarstaUslug::TrybDzialania::NET_ARX);
+    emit uslugi->updateUI();
+}
+
+void NetService::disconnect()
+{
+    sendDataPackage(DISCONNECT_NOTIFY);
+    emit logAppend("Połączenie zerwane!");
+    handleDisconnection();
+}
+void NetService::sendText(QString message)
+{
+    sendDataPackage(TXT_MSG, message.toUtf8());
+}
+void NetService::sendPidConfig()
+{
+    sendDataPackage(CONFIG_PID, uslugi->pid.toByteArray());
+}
+void NetService::sendGenConfig()
+{
+    sendDataPackage(CONFIG_GEN, uslugi->generator.toByteArray());
+}
+void NetService::sendArxConfig()
+{
+    sendDataPackage(CONFIG_ARX, uslugi->arx.toByteArray());
+}
+void NetService::sendOnOffConfig()
+{
+    sendDataPackage(CONFIG_ONOFF, uslugi->onOff.toByteArray());
+}
+void NetService::sendIntervalConfig()
+{
+    sendDataPackage(CONFIG_INTERVAL, uslugi->interwal.toByteArray());
+}
+void NetService::sendRegulationTypeConfig()
+{
+    sendDataPackage(CONFIG_REGULATION, uslugi->regulacja.toByteArray());
+}
+
+void NetService::sendSample(SimSampleFromRegulator sample)
+{
+    sendDataPackage(SIM_SAMPLE_FROM_REGULATOR, sample.toByteArray());
+}
+void NetService::sendSample(SimSampleFromObject sample)
+{
+    sendDataPackage(SIM_SAMPLE_FROM_OBJECT, sample.toByteArray());
+}
+void NetService::sendSimmulationRunning(bool running)
+{
+    if(running)
+        sendDataPackage(SIM_START);
+    else
+        sendDataPackage(SIM_STOP);
+}
+void NetService::sendSimmulationRestart()
+{
+    sendDataPackage(SIM_RESTART);
+}
+
+void NetService::handleNewClient()
+{
+    while (server->hasPendingConnections())
+    {
+        socket = server->nextPendingConnection();
+        connect(socket, &QTcpSocket::readyRead, this, [this]()
+                {
+                    processDataPackage(socket->readAll());
+                });
+        connect(socket, &QTcpSocket::disconnected, this, &NetService::handleDisconnection);
+        remoteIP = QHostAddress(socket->peerAddress().toIPv4Address()).toString();
+        emit logAppend("Wykryto połączenie przychodzące z IP: " + remoteIP);
+    }
+}
+
+void NetService::handleDisconnection()
+{
+    if(isServer())
+    {
+        server->close();
+        server->deleteLater();
+    }
+    if(socket != nullptr)
+    {
+        socket->disconnectFromHost();
+        socket->deleteLater();
+    }
+    socket = nullptr;
+    server = nullptr;
+
+    unsuccessfullAuthAttempts = 0;
+    uslugi->trybDzialania.set(WarstaUslug::TrybDzialania::LOCAL);
+    emit connectionStatusChanged(false, "");
+    emit uslugi->updateUI();
 }
 
 void NetService::processDiscoveryUdp()
@@ -29,365 +181,162 @@ void NetService::processDiscoveryUdp()
         sender = QHostAddress(sender.toIPv4Address());
 
         if (dg.data() == "UAR_QUERY")
-            udp->writeDatagram("UAR_RESP", sender, discoveryPort);
+            udp->writeDatagram("UAR_RESP", sender, CONSTS::NET::DISCOVERY_PORT);
         else if (dg.data() == "UAR_RESP")
             emit deviceFound(sender.toString());
     }
 }
 
-void NetService::startAsServer(int port)
+void NetService::processDataPackage(QByteArray data)
 {
-    stopAll();
-    server = new Server(this);
-
-    connect(server, &Server::newConn, this, &NetService::handleNewClient);
-    connect(server, &Server::dataReceived, this, &NetService::processIncomingData);
-
-    if (server->listen(port))
-        emit logAppend("Serwer nasłuchuje na porcie " + QString::number(port));
-
-    emit uslugi->updateUI();
-}
-
-void NetService::handleNewClient(int id, QString ip)
-{
-    remoteIP = ip;
-    emit logAppend("Wykryto połączenie przychodzące z IP: " + ip);
-}
-
-void NetService::startAsClient(QString ip, int port)
-{
-    stopAll();
-    client = new Client(this);
-
-    connect(client, &Client::connected, this, [this]()
-    {
-        sendBinaryPacket(CONNECT_REQUEST);
-    });
-    connect(client, &Client::dataRecieved, this, [this](QByteArray dt) { processIncomingData(-1, dt); });
-    connect(client, &Client::disconnected, this, &NetService::handleDisconnection);
-
-    remoteIP = ip;
-    client->connectTo(ip, port);
-
-    emit uslugi->updateUI();
-}
-
-void NetService::stopAll()
-{
-    sendBinaryPacket(DISCONNECT_NOTIFY); // Poinformowanie partnera
-    stopAllLocal();
-}
-
-void NetService::stopAllLocal()
-{
-    if(client)
-    {
-        client->disconnect();
-        client->deleteLater();
-        client = nullptr;
-    }
-
-    if(server)
-    {
-        server->stopListening();
-        server->deleteLater();
-        server = nullptr;
-    }
-
-    authAttempts = 0;
-    emit updateStatus(false, "");
-    emit uslugi->updateUI();
-}
-
-void NetService::setAuthMode(int mode, QString code)
-{
-    currentAuthCode = code;
-    authAttempts = 0;
-
-    if (mode == 0)
-    {
-        sendBinaryPacket(CODE_SEND, currentAuthCode.toUtf8());
-        emit logAppend("Wysłano kod autoryzacyjny do partnera.");
-    }
-    else if (mode == 1)
-    {
-        sendBinaryPacket(AUTH_SUCCESS);
-        emit updateStatus(true, remoteIP);
-        emit logAppend("Połączono w trybie bez autoryzacji.");
-    }
-}
-
-void NetService::processIncomingData(int id, QByteArray data)
-{
+    receivedPacketCounter++;
     QDataStream in(&data, QIODevice::ReadOnly);
     quint8 type;
-    in >> type;                             //Odczyt typu z protokołu
-    qDebug() << type;
+    in >> type;
+    QByteArray dane_pakietu;
+    in >> dane_pakietu;
     switch (type)
     {
-        case CONNECT_REQUEST:
-            emit authRequired("Partner");   // Wyzwala QMessageBox w ConnectionWindow
+        case CONNECTION_REQUEST:
+            emit authQuestionForUser();
             break;
 
-        case CODE_SEND:
-        {
-            QByteArray data; in >> data;
-            QString code = QString::fromUtf8(data);
-            currentAuthCode = code;         // Zapamiętujemy kod do sprawdzenia u siebie
-            emit codeEntryRequired();       // GUI: Pokaż QInputDialog do wpisania kodu
-        break;
-        }
-
-        case CODE_DENY:
-            emit logAppend("Odrzucono próbę połączenia.");
-        break;
-
-        case CODE_CHECK:
-        {
-            QByteArray data; in >> data;
-
-            QString input = QString::fromUtf8(data);    //Otrzymanie kodu
-            verifyCode(input);                          //Logika 3 prób
-        break;
-        }
-
-        case AUTH_SUCCESS:
-            emit updateStatus(true, remoteIP);
-            emit logAppend("Autoryzacja udana! Tryb sieciowy aktywny.");
-        break;
+        case AUTH_NEEDED:
+            if(isServer()) return;
+            emit authCodeEntryRequired();
+            break;
 
         case AUTH_FAILED:
-        {
-            QByteArray data; in >> data;
-            QString info = QString::fromUtf8(data);
-            if (info == "FINAL")
-            {
-                emit logAppend("Przekroczono 3 próby. Rozłączono.");
-                stopAll();
-            } else emit authErrorReceived(info.toInt()); // Informacja o błędzie u wpisującego
-
+            if(isServer()) return;
+            emit authCodeEntryRequired();
+            emit authErrorReceived("Błąd, to już twoja XXX proba");
+            emit logAppend("Odrzucono próbę połączenia. Prawdopodobnie błędny kod.");
         break;
-        }
-        case CONFIG_PID:
-        {
-            m_packetCounter++;
-            double p, i, d, min, max; int mode;
-            QByteArray data; in >> data;
-            QDataStream params(&data, QIODevice::ReadOnly);
-            params >> p >> i >> d >> mode >> min >> max;
 
-            uslugi->pid.k = (double)p;
-            uslugi->pid.Ti = (double)i;
-            uslugi->pid.Td = (double)d;
-            uslugi->pid.sposobLiczeniaCalki = (RegulatorPID::SposobLiczeniaCalki)mode;
-            uslugi->pid.limityWyjscia.setMin(min);
-            uslugi->pid.limityWyjscia.setMax(max);
-
-            emit uslugi->updateUI();
-
-            break;
-        }
-        case CONFIG_ARX:
-        {
-            m_packetCounter++;
-            QByteArray data; in >> data;
-            QDataStream params(&data, QIODevice::ReadOnly);
-
-            quint32 size; params >> size;
-            std::vector<ARX::Wspolczynnik> noweWspol;
-            for(quint32 i=0; i<size; ++i)
+        case AUTH_CODE:
+            if(!isServer()) return;
+            if(dane_pakietu.toInt() == currentAuthCode)
             {
-                double a, b; params >> a >> b;
-                noweWspol.push_back({a, b});
+                sendDataPackage(AUTH_SUCCESS);
+                authenticated = true;
+                emit connectionStatusChanged(true, remoteIP);
+                emit logAppend("Połączono w trybie autoryzacji kodem.");
             }
+            else
+            {
+                unsuccessfullAuthAttempts++;
+                authenticated = false;
+                emit logAppend("Nieudana próba połączenia z IP" + remoteIP);
+                sendDataPackage(AUTH_FAILED);
+            }
+            if(unsuccessfullAuthAttempts >= CONSTS::NET::MAX_AUTH_ATTEMPTS)
+            {
+                emit logAppend("Otzymano 3 takie nieudane próby, zamykam połączenie z " + remoteIP + " i czekam na nowego klienta.");
+                //Restartuję serwer, bo to najłatwiejsze
+                startAsServer(server->serverPort());
+            }
+        break;
 
-            int k; double z, minU, maxU, minY, maxY;
-            params >> k >> z >> minU >> maxU >> minY >> maxY;
-
-            uslugi->arx.wspolczynniki = (ARX::WspolczynnikiObiektuARX)noweWspol;
-            uslugi->arx.k.set(k);
-            uslugi->arx.z.set(z);
-
-            uslugi->arx.limityZadana.setMin(minU);
-            uslugi->arx.limityZadana.setMax(maxU);
-            uslugi->arx.limityRegulowana.setMin(minY);
-            uslugi->arx.limityRegulowana.setMax(maxY);
-
-            emit uslugi->updateUI();
-
-            break;
-        }
-        case CONFIG_GEN:
-        {
-            m_packetCounter++;
-            int type; double amp, per, off, duty;
-            QByteArray data; in >> data;
-            QDataStream params(&data, QIODevice::ReadOnly);
-            params >> type >> amp >> per >> off >> duty;
-
-            uslugi->generator.typSygnalu = (GeneratorWartosci::TypSygnalu)type;
-            uslugi->generator.amplituda = (double)amp;
-            uslugi->generator.okres = (double)per;
-            uslugi->generator.wypelnienie = (double)duty;
-            uslugi->generator.skladowaStala = (double)off;
-
-            emit uslugi->updateUI();
-
-            break;
-        }
-        case SIM_SAMPLE:
-        {
-            m_packetCounter++;
-            SimSample s;
-            memcpy(&s, data.data() + 1, sizeof(SimSample)); // Deserializacja szybka 1:1
-            emit sampleReceived(s.u, s.k);
-            break;
-        }
-        case SIM_CMD:
-        {
-            m_packetCounter++;
-            QByteArray data; in >> data;
-            QDataStream params(&data, QIODevice::ReadOnly);
-            int cmd; params >> cmd;
-
-            if (cmd == 1) uslugi->dziala = true;        // START
-            else if (cmd == 0) uslugi->dziala = false;  // STOP
-            else if (cmd == 2) uslugi->reset();         // RESET
-
-            emit uslugi->updateUI();
-        }
+        case AUTH_SUCCESS:
+            if(isServer()) return;
+            authenticated = true;
+            emit connectionStatusChanged(true, remoteIP);
+            emit logAppend("Połączenie udane! Tryb sieciowy aktywny.");
+        break;
 
         case TXT_MSG:
-        {
-            m_packetCounter++;
-            QByteArray data; in >> data;
-
-            QString msg = QString::fromUtf8(data);
-            emit logAppend("Otrzymano: " + msg);
+            emit logAppend("Otrzymano: " + QString::fromUtf8(dane_pakietu));
             break;
-        }
 
         case DISCONNECT_NOTIFY:
+            if(!authenticated) return;
             emit logAppend("Partner zakończył połączenie.");
-            stopAll(); // Metoda czyszcząca bez wysyłania powiadomienia (uniknięcie pętli)
-        break;
+            handleDisconnection(); // Metoda czyszcząca bez wysyłania powiadomienia (uniknięcie pętli)
+            break;
+
+        case CONFIG_PID:
+            if(!authenticated) return;
+            uslugi->pid.fromByteArray(dane_pakietu);
+            emit uslugi->updateUI();
+            break;
+
+        case CONFIG_ARX:
+            if(!authenticated) return;
+            uslugi->arx.fromByteArray(dane_pakietu);
+            emit uslugi->updateUI();
+            break;
+
+        case CONFIG_GEN:
+            if(!authenticated) return;
+            uslugi->generator.fromByteArray(dane_pakietu);
+            emit uslugi->updateUI();
+            break;
+
+        case CONFIG_ONOFF:
+            if(!authenticated) return;
+            uslugi->onOff.fromByteArray(dane_pakietu);
+            emit uslugi->updateUI();
+            break;
+
+        case CONFIG_REGULATION:
+            if(!authenticated) return;
+            uslugi->regulacja.fromByteArray(dane_pakietu);
+            emit uslugi->updateUI();
+            break;
+
+        case CONFIG_INTERVAL:
+            if(!authenticated) return;
+            uslugi->interwal.fromByteArray(dane_pakietu);
+            emit uslugi->updateUI();
+            break;
+
+        case SIM_SAMPLE_FROM_OBJECT:
+            if(!authenticated) return;
+            uslugi->sampleReceivedFromARXObjectNowIHaveToBuildTheTickAndSendItToPlotsToUpdateThem(SimSampleFromObject::fromByteArray(dane_pakietu));
+            // emit sampleReceivedFromObject(sample);
+            break;
+
+        case SIM_SAMPLE_FROM_REGULATOR:
+            if(!authenticated) return;
+            uslugi->sampleReceivedFromREgulatorInstanceNowINeedToForewardItToTheUARAndThenSimmulateARXReactionAndSensTheSignalBack(SimSampleFromRegulator::fromByteArray(dane_pakietu));
+            // emit sampleReceivedFromServer(s);
+            break;
+
+        case SIM_START:
+            if(!authenticated) return;
+            uslugi->dziala.set(true);
+            emit uslugi->updateUI();
+            break;
+        case SIM_STOP:
+            if(!authenticated) return;
+            uslugi->dziala.set(false);
+            emit uslugi->updateUI();
+            break;
+        case SIM_RESTART:
+            if(!authenticated) return;
+            uslugi->reset();
+            emit simmulationRestart();
+            emit uslugi->updateUI();
+            break;
     }
-}
-void NetService::sendCodeToCheck(QString code)
-{
-    sendBinaryPacket(CODE_CHECK, code.toUtf8());
 }
 
-void NetService::verifyCode(QString inputCode)
+void NetService::sendDataPackage(quint8 type, const QByteArray &data)
 {
-    if (inputCode == currentAuthCode)
-    {
-        sendBinaryPacket(AUTH_SUCCESS);
-        emit updateStatus(true, remoteIP); // Sukces - NIE wywołujemy stopAll!
-        emit logAppend("Autoryzacja udana!");
-    }
-    else
-    {
-        authAttempts++;
-        if (authAttempts >= 3)
-        {
-            emit logAppend("Przekroczono limit prób!");
-            sendBinaryPacket(AUTH_FAILED, "FINAL");
-        } else sendBinaryPacket(AUTH_FAILED, QString::number(authAttempts).toUtf8());
-    }
-}
-
-void NetService::sendBinaryPacket(quint8 type, const QByteArray &data) {
     QByteArray package;
     QDataStream out(&package, QIODevice::WriteOnly);
     out << type << data;
-
-    if (client && client->isConnected()) client->sendData(package);
-    else if (server) server->sendTo(0, package);
-}
-
-void NetService::sendSimCmd(int cmd)
-{
-    if (!isConnected()) return;
-
-    QByteArray data;
-    QDataStream out(&data, QIODevice::WriteOnly);
-    out << cmd;
-
-    sendBinaryPacket(SIM_CMD, data);
-}
-
-void NetService::sendSample(quint32 k, double u, double y)
-{
-    SimSample  packet = { k, u, y };
-    QByteArray data;
-    data.append((char)SIM_SAMPLE);
-    data.append(reinterpret_cast<const char*>(&packet), sizeof(SimSample));
-
-    if (client && client->isConnected()) client->sendData(data);
-    else if (server) server->sendTo(0, data);
-}
-
-// SYNCHRONIZACJA PID
-void NetService::sendPidConfig(double p, double i, double d, int mode, double min, double max)
-{
-    QByteArray data;
-    QDataStream out(&data, QIODevice::WriteOnly);
-    out << p << i << d << mode << min << max;
-    sendBinaryPacket(CONFIG_PID, data);
-}
-
-// SYNCHRONIZACJA GENERATORA
-void NetService::sendGenConfig(int type, double amp, double period, double offset, double duty)
-{
-    QByteArray data;
-    QDataStream out(&data, QIODevice::WriteOnly);
-    out << type << amp << period << offset << duty;
-    sendBinaryPacket(CONFIG_GEN, data);
-}
-
-//SYNCHRONIZACJA ARX
-void NetService::sendArxConfig(const QVector<double>& A, const QVector<double>& B, int k, double sigma, double minU, double maxU, double minY, double maxY)
-{
-    QByteArray data;
-    QDataStream out(&data, QIODevice::WriteOnly);
-    out << A << B << k << sigma << minU << maxU << minY << maxY;
-    sendBinaryPacket(CONFIG_ARX, data);
-}
-
-void NetService::handleDisconnection()
-{
-    emit logAppend("BŁĄD! Połączenie zerwane! Powrót do trybu stacjonarnego.");
-    emit updateStatus(false, "");
-    emit uslugi->updateUI();
-}
-
-bool NetService::isConnected()
-{
-    if (isClient()) return client->isConnected();
-    if (isServer()) return true;
-    return false;
+    assert(socket != nullptr);
+    if(socket->isOpen())
+    {
+        socket->write(package);
+        socket->flush();
+    }
+    else
+        qDebug() << "[ERR] Połączenie nie jest otwarte";
 }
 
 bool NetService::isServer()
 {
     return server != nullptr;
 }
-
-bool NetService::isClient()
-{
-    return client != nullptr;
-}
-
-// QString bitString;
-// for (char byte : data) {
-//     // Convert each byte to an unsigned integer
-//     unsigned char ubyte = static_cast<unsigned char>(byte);
-//     // Loop through each bit (MSB first)
-//     for (int i = 7; i >= 0; --i) {
-//         bitString.append(((ubyte >> i) & 1) ? '1' : '0');
-//     }
-// }
-// qDebug() << bitString;
-// qDebug() << "P: " << p << "I: " << i << "D: " << d;

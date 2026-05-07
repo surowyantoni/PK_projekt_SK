@@ -7,72 +7,130 @@
 #include "netservice.h"
 #include "qtimer.h"
 #include "utils.hpp"
+#include <queue>
 
 //#include "mainwindow.h"
 // #include <QObject>
 // #include <QTimer>
 // #include <functional>
-enum WybranyRegulator { PID = 0, ONOFF = 1, nic = 2 };
+enum WybranyRegulator { PID = 0, ONOFF = 1 };
 
 class WarstaUslug : public QObject
 {
     Q_OBJECT
 public:
-    PROPERTY_ACCESS(uint32_t, InterwalSymulacjiWMilisekundach)
+    using Czas = uint32_t;
+    enum class TrybDzialania {
+        LOCAL,
+        NET_REG,
+        NET_ARX,
+    };
+
+    PROP(TrybDzialania, WarstaUslug)
+        GETTER(TrybDzialania)
+        SETTER(TrybDzialania)
+    } trybDzialania;
+
+    PROP(uint32_t, WarstaUslug)
+        GETTER(uint32_t)
         void set(const uint32_t& value)
         {
             assert(value > 1);
-            static_cast<WarstaUslug*>(owner)->timer.setInterval(value);
+            owner->timer.setInterval(value);
             this->value = value;
+        }
+        void fromByteArray(QByteArray data)
+        {
+            QDataStream s(&data, QIODevice::ReadOnly);
+            uint32_t interwal; s >> interwal;
+            set(interwal);
+        }
+        QByteArray toByteArray() const
+        {
+            QByteArray data;
+            QDataStream s(&data, QIODevice::WriteOnly);
+            s << get();
+            return data;
         }
     } interwal;
 
-    PROPERTY(uint32_t, CzasTrwaniaSymulacjiWMilisekundach)
-    private:
-        void set(const uint32_t& value)
-        {
-            this->value = value;
-        };
-        void operator=(const uint32_t& value)
-        {
-            set(value);
-        };
-    } czas;
-
-    PROPERTY_ACCESS(bool, CzySymulacjaDziala)
+    PROP(bool, WarstaUslug)
         void set(const bool& value)
         {
+            if(owner->trybDzialania.get() != TrybDzialania::LOCAL)
+            {
+                owner->netService.sendSimmulationRunning(value);
+                if(owner->trybDzialania.get() == TrybDzialania::NET_ARX)
+                    return;
+            }
             if(value)
-                static_cast<WarstaUslug*>(owner)->timer.start();
+                owner->timer.start();
             else
-                static_cast<WarstaUslug*>(owner)->timer.stop();
+                owner->timer.stop();
         }
-        bool get() const
+        const bool get() const
         {
-            return static_cast<WarstaUslug*>(owner)->timer.isActive();
+            return owner->timer.isActive();
         }
     } dziala;
+    PROP(UAR::RodzajSterowania, WarstaUslug)
+        void set(const UAR::RodzajSterowania& value)
+        {
+            switch (value)
+            {
+            case UAR::RodzajSterowania::OnOff:
+                owner->uar.setOnOff(&owner->onOff);
+            case UAR::RodzajSterowania::PID:
+                owner->uar.setPID(&owner->pid);
+                break;
+            }
+            owner->netService.sendRegulationTypeConfig();
+        }
+        const UAR::RodzajSterowania get() const
+        {
+            return owner->uar.getWybranyRegulator();
+        }
+        void fromByteArray(QByteArray data)
+        {
+            QDataStream s(&data, QIODevice::ReadOnly);
+            int rodz_ster; s >> rodz_ster;
+            set(static_cast<UAR::RodzajSterowania>(rodz_ster));
+        }
+        QByteArray toByteArray() const
+        {
+            QByteArray data;
+            QDataStream s(&data, QIODevice::WriteOnly);
+            s << get();
+            return data;
+        }
+    } regulacja;
+
+    WarstaUslug();
+
+    void reset();
     ARX arx;
     RegulatorPID pid;
     RegulatorOnOff onOff;
     GeneratorWartosci generator;
-    WarstaUslug();
+    NetService netService;
 
-    NetService* getNetService() { return netService; }
-
-    void reset();
-    void Regulacja(UAR::RodzajSterowania regulacja);
-    UAR::RodzajSterowania Regulacja();
-
-signals:
-    void updateCharts(UAR::Tick tick, uint32_t czas);
-    void updateUI();
-private:
-    NetService *netService;
-    UAR uar;
-    QTimer timer;
-private slots:
-    void symuluj();
+public slots:
     void wczytajZPliku();
     void zapiszDoPliku();
-};
+    void sampleReceivedFromREgulatorInstanceNowINeedToForewardItToTheUARAndThenSimmulateARXReactionAndSensTheSignalBack(SimSampleFromRegulator sample); // Nazywanie funkcji to moja pasja
+    void sampleReceivedFromARXObjectNowIHaveToBuildTheTickAndSendItToPlotsToUpdateThem(SimSampleFromObject sample);
+
+signals:
+    void updateCharts(UAR::Tick tick, Czas czas);
+    void updateUI();
+
+private:
+
+    UAR uar;
+    QTimer timer;
+    Czas czas;
+
+    std::queue<UAR::Tick> ticki_do_uzupelnienia;
+private slots:
+    void symuluj();
+    };

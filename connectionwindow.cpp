@@ -1,5 +1,4 @@
 #include "connectionwindow.h"
-#include "ProtocolDef.h"
 #include "qevent.h"
 #include "ui_connectionwindow.h"
 
@@ -19,11 +18,11 @@ ConnectionWindow::ConnectionWindow(NetService *net, QWidget *parent)
     setWindowFlags(windowFlags() | Qt::WindowMinimizeButtonHint);
 
     connect(service, &NetService::logAppend, this, &ConnectionWindow::log);
-    connect(service, &NetService::updateStatus, this, &ConnectionWindow::updateStatus);
+    connect(service, &NetService::connectionStatusChanged, this, &ConnectionWindow::updateStatus);
     connect(service, &NetService::deviceFound, this, &ConnectionWindow::onDeviceFound);
-    connect(service, &NetService::authRequired, this, &ConnectionWindow::onAuthRequired);
+    connect(service, &NetService::authQuestionForUser, this, &ConnectionWindow::onAuthRequired);
     connect(service, &NetService::authErrorReceived, this, &ConnectionWindow::onAuthError);
-    connect(service, &NetService::codeEntryRequired, this, &ConnectionWindow::onCodeEntryRequired);
+    connect(service, &NetService::authCodeEntryRequired, this, &ConnectionWindow::onCodeEntryRequired);
 
     connect(ui->editIP, &QLineEdit::editingFinished, this, &ConnectionWindow::setComboIPnewAddress);
     connect(ui->editIP2, &QLineEdit::editingFinished, this, &ConnectionWindow::setComboIPnewAddress);
@@ -75,7 +74,7 @@ void ConnectionWindow::closeEvent(QCloseEvent *event)
 
     if (res == QMessageBox::Yes)
     {
-        service->stopAll();
+        service->disconnect();
         event->accept();
     } else event->ignore();
 }
@@ -156,68 +155,38 @@ void ConnectionWindow::onDeviceFound(QString ip)
     } else log("Brak nowych urządzeń.");
 }
 
-//Ustawienie trybu. Jeżeli ustawimy na serwer to go uruchamiamy, jeżeli klient - zamykamy serwer i ustawiamy klienta
-void ConnectionWindow::on_radioServer_toggled(bool checked)
-{
-    service->stopAll();
-    if (checked)
-    {
-        ui->btnStart->setEnabled(true);
-        ui->btnStop->setEnabled(true);
-        ui->btnConnect->setEnabled(false);
-        ui->btnDisconnect->setEnabled(false);
-    }
-    else
-    {
-        ui->btnStart->setEnabled(false);
-        ui->btnStop->setEnabled(false);
-        ui->btnConnect->setEnabled(true);
-        ui->btnDisconnect->setEnabled(true);
-    }
-
-}
-
 void ConnectionWindow::on_btnConnect_clicked()
 {
     QString ip = ui->comboIP->currentText();
     if (ip.isEmpty())
         ip = composeIPAddres();
 
-    if (ui->comboMode->currentText() != "STACJONARNY")
-    {
-        log("Próba połączenia z " + ip + "...");
-        service->startAsClient(ip, ui->spinPort->value());
-        ui->btnSend->setEnabled(true);
-    } else ui->comboMode->setCurrentIndex(1);
-
+    log("Próba połączenia z " + ip + "...");
+    service->connectAsClient(ip, ui->spinPort->value());
+    ui->btnSend->setEnabled(true);
 }
 
 void ConnectionWindow::on_btnDisconnect_clicked()
 {
-    if (ui->comboMode->currentIndex() != 0)
+
+    int res = QMessageBox::question(this, "Rozłączanie", "Czy na pewno chcesz przerwać połączenie i wrócić do trybu stacjonarnego?");
+
+    if (res == QMessageBox::Yes)
     {
-        int res = QMessageBox::question(this, "Rozłączanie", "Czy na pewno chcesz przerwać połączenie i wrócić do trybu stacjonarnego?");
-
-        if (res == QMessageBox::Yes)
-        {
-            log("Zażądano rozłączenia z partnerem.");
-            service->stopAll();                         // Zlecenie zatrzymania usług sieciowych
-            updateStatus(false, "");
-            ui->btnSend->setEnabled(false);
-        }
+        log("Zażądano rozłączenia z partnerem.");
+        service->disconnect();                         // Zlecenie zatrzymania usług sieciowych
+        updateStatus(false, "");
+        ui->btnSend->setEnabled(false);
     }
-
-    ui->comboMode->setCurrentIndex(0);
 }
 
 void ConnectionWindow::on_btnStart_clicked()
 {
-    if (ui->comboMode->currentText() != "STACJONARNY")
-    {
-        log("Próba uruchomienia serwera...");
-        service->startAsServer(ui->spinPort->value());
-        ui->btnSend->setEnabled(true);
-    } else ui->comboMode->setCurrentIndex(1);
+
+    log("Próba uruchomienia serwera...");
+    service->startAsServer(ui->spinPort->value());
+    ui->btnSend->setEnabled(true);
+
 }
 
 void ConnectionWindow::on_btnStop_clicked()
@@ -227,29 +196,12 @@ void ConnectionWindow::on_btnStop_clicked()
     if (res == QMessageBox::Yes)
     {
         log("Wyłączanie serwera...");
-        service->stopAll();                         // Zlecenie zatrzymania usług sieciowych
+        service->disconnect();                         // Zlecenie zatrzymania usług sieciowych
         updateStatus(false, "");
         ui->btnSend->setEnabled(false);
     }
 
-    ui->comboMode->setCurrentIndex(0);
-}
-
-
-void ConnectionWindow::on_comboMode_currentIndexChanged(int index)
-{
-
-    if (ui->comboMode->currentText() != "STACJONARNY")
-    {
-        int res = QMessageBox::question(this, "Zmiana trybu!", "Czy na pewno chcesz przejść w tryb sieciowy?");
-
-        if (res == QMessageBox::Yes)
-        {
-            //TO DO - zablokowanie kontrolek
-            ui->comboMode->setCurrentIndex(1);
-        }
-        else ui->comboMode->setCurrentIndex(0);
-    }
+    ui->radioLokalny->setChecked(true);
 }
 
 void ConnectionWindow::on_comboIP_currentTextChanged(const QString &arg1)
@@ -264,9 +216,10 @@ void ConnectionWindow::on_btnClear_clicked()
 
 void ConnectionWindow::on_btnSend_clicked()
 {
-    service->sendBinaryPacket(TXT_MSG, ui->editMsg->text().toUtf8());
+    service->sendText(ui->editMsg->text());
     log("Wysłano: " + ui->editMsg->text());
-    ui->editMsg->clear(); ui->editMsg->setFocus();
+    ui->editMsg->clear();
+    ui->editMsg->setFocus();
 }
 
 void ConnectionWindow::updateStatus(bool connected, QString ip)
@@ -282,14 +235,14 @@ void ConnectionWindow::updateStatus(bool connected, QString ip)
         ui->labelConnStatus->setText("● Rozłączono");
         ui->labelConnStatus->setStyleSheet("color: red;");
         ui->labelRemoteIP->setText("IP zdalne: -");
-        ui->comboMode->setCurrentIndex(0);
+        ui->radioLokalny->setChecked(true);
     }
 }
 
-void ConnectionWindow::onAuthRequired(QString ip)
+void ConnectionWindow::onAuthRequired()
 {
     QMessageBox msgBox;
-    msgBox.setText("Urządzenie " + ip + " chce się połączyć.");
+    msgBox.setText("Urządzenie  chce się połączyć.");
     msgBox.setInformativeText("Wybierz tryb autoryzacji:");
     QPushButton *btnCode = msgBox.addButton("Generuj kod", QMessageBox::ActionRole);
     QPushButton *btnNoCode = msgBox.addButton("Bez kodu", QMessageBox::ActionRole);
@@ -298,33 +251,67 @@ void ConnectionWindow::onAuthRequired(QString ip)
 
     if (msgBox.clickedButton() == btnCode)
     {
-        QString code = QString::number(QRandomGenerator::global()->bounded(1000, 9999));
-        log("Wygenerowano kod dla partnera: " + code);
-        service->setAuthMode(0, code); // Tryb z kodem
+        int code = QRandomGenerator::global()->bounded(1000, 9999);
+        log("Wygenerowano kod dla partnera: " + QString::number(code));
+        service->chooseAuthWithCode(code); // Tryb z kodem
     }
-    else if (msgBox.clickedButton() == btnNoCode) { service->setAuthMode(1, ""); }
-    else { service->sendBinaryPacket(CODE_DENY); }
+    else if (msgBox.clickedButton() == btnNoCode) { service->chooseAuthWithoutCode(); }
+    else { service->chooseAuthReject(); }
 }
 
-void ConnectionWindow::onAuthError(int attempt)
+void ConnectionWindow::onAuthError(QString errMsg)
 {
-    QMessageBox::warning(this, "Błąd autoryzacji", QString("Podano błędny kod! Próba %1 z 3.").arg(attempt));
+    QMessageBox::warning(this, "Błąd autoryzacji", QString("Podano błędny kod! %1.").arg(errMsg));
     onCodeEntryRequired();
 }
 
 void ConnectionWindow::onCodeEntryRequired()
 {
     bool ok;
-    QString text = QInputDialog::getText(this, "Autoryzacja", "Partner wymaga kodu dostępu:", QLineEdit::Normal, "", &ok);
+    QString text;
+    better_luck_next_time:
+    text = QInputDialog::getText(this, "Autoryzacja", "Partner wymaga kodu dostępu:", QLineEdit::Normal, "", &ok);
 
     if (ok && !text.isEmpty())
     {
+        service->authCodeVerification(text.toInt());
         log("Wysłano kod do weryfikacji...");
-        service->sendCodeToCheck(text);
-    } else { service->sendBinaryPacket(CODE_DENY); }
+    }
+    else
+    {
+        log("Wprowadzono niepoprawny format kodu");
+        goto better_luck_next_time;
+    }
 }
 
 ConnectionWindow::~ConnectionWindow()
 {
     delete ui;
 }
+
+void ConnectionWindow::on_radioLokalny_clicked()
+{
+    ui->btnStart->setEnabled(false);
+    ui->btnStop->setEnabled(false);
+    ui->btnConnect->setEnabled(false);
+    ui->btnDisconnect->setEnabled(false);
+}
+
+
+void ConnectionWindow::on_radioServer_clicked()
+{
+    ui->btnStart->setEnabled(true);
+    ui->btnStop->setEnabled(true);
+    ui->btnConnect->setEnabled(false);
+    ui->btnDisconnect->setEnabled(false);
+}
+
+
+void ConnectionWindow::on_radioClient_clicked()
+{
+    ui->btnStart->setEnabled(false);
+    ui->btnStop->setEnabled(false);
+    ui->btnConnect->setEnabled(true);
+    ui->btnDisconnect->setEnabled(true);
+}
+

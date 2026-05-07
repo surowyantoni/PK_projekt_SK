@@ -2,6 +2,7 @@
 #define UTILS_H
 
 #include <cstdint>
+#include <utility>
 class MinMaxClamp
 {
     double min;
@@ -14,9 +15,9 @@ public:
     void setMin(double value);
     void setMax(double value);
     void setActive(bool active);
-    double getMin();
-    double getMax();
-    bool getActive();
+    double getMin() const;
+    double getMax() const;
+    bool getActive() const;
 };
 
 template<typename T>
@@ -42,9 +43,9 @@ public:
     void operator=(const T& value)
     { set(value); }
     // to do override
-    T get() const
+    const T get() const
     {   return value;   }
-    operator T() const
+    operator const T() const
     { return get(); }
 };
 
@@ -66,27 +67,65 @@ public:
     PropertyWithAccess<T> operator=(PropertyWithAccess<T>&&) = delete;
 };
 
-#define PROPERTY(type, name) struct name : public Property<type>\
+#define PROPERTY(type) struct : public Property<type>\
 {\
-    name(type& value)\
-    : Property<type>(value) {}\
-    name(type&& value)\
-    : Property<type>(value) {}\
-    void operator=(const type&& value) { set(value); }\
-    operator type() const { return get(); }\
+    void operator=(const type& value) { set(value); }\
+    operator const type() const { return get(); }\
     type& use() { return value; }\
 
 
-#define PROPERTY_ACCESS(type, name) \
-struct name : public PropertyWithAccess<type>\
+#define PROPERTY_ACCESS(type) \
+struct : public PropertyWithAccess<type>\
 { \
-    name(void* owner, type& value)\
-    : PropertyWithAccess<type>(owner, value) {}\
-    name(void* owner, type&& value)\
-    : PropertyWithAccess<type>(owner, value) {}\
-    void operator=(const type&& value) { set(value); }\
-    operator type() const { return get(); }\
+    void operator=(const type& value) { set(value); }\
+    operator const type() const { return get(); }\
     type& use() { return value; }
+
+#define PROP(type, ownerType) \
+struct { \
+type value; \
+ownerType* owner;
+
+
+#define SETTER(type) \
+void set(const type& value) \
+{  this->value = value; }
+
+#define GETTER(type) \
+const type& get() const \
+{  return this->value; }
+
+// #define OPERATORS(type) \
+// operator const type&() \
+// { return get(); } \
+// void operator=(const type& value) \
+// { set(value); }
+
+#define DEFAULTS(type) \
+SETTER(type) \
+GETTER(type) \
+// OPERATORS(type)
+
+
+
+// #define OWNER(type) \
+// type* owner = static_cast<type*>(this->owner);
+
+
+// class car {
+//     PROP(int)
+//         SETTER(int)
+//         GETTER(int)
+//         OPERATORS(int)
+//     } engine_miles;
+//     car();
+// };
+
+// car::car()
+//     : engine_miles{100, this}
+// {
+//     engine_miles = 4;
+// }
 
 
 // USAGE
@@ -110,6 +149,36 @@ struct name : public PropertyWithAccess<type>\
 //     } speed;
 // };
 
+#define SERIALIZABLE \
+QJsonObject toJSON() const; \
+void fromJSON(QJsonObject& json); \
+QByteArray toByteArray() const; \
+void fromByteArray(QByteArray& data);
+
+
+
+/**
+
+QJsonObject CLASS::toJSON() const
+{
+
+}
+void CLASS::fromJSON(QJsonObject& json)
+{
+
+}
+QByteArray CLASS::toByteArray() const
+{
+
+}
+void CLASS::fromByteArray(QByteArray& data)
+{
+
+}
+
+*/
+
+// convert Seconds to miliseconds
 inline uint32_t secondsToMili(double seconds)
 {
     return seconds * 1000;

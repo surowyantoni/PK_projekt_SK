@@ -23,8 +23,13 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
-    PROPERTY(uint32_t , SzerokoscOknaObserwacjiWykresowWMilisekundach)
-    //TODO ograniczenia
+    PROP(uint32_t, MainWindow)
+        GETTER(uint32_t)
+        void set(const uint32_t& value)
+        {
+            assert(value > 0);
+            this->value = value;
+        }
     } oknoObserwacji;
 
 public slots:
@@ -92,23 +97,9 @@ private:
     ParametryARX* paraARX = nullptr;
     ConnectionWindow *m_connWindow = nullptr;
 
-    void syncPidToNetwork();
-    void syncGenToNetwork();
-    void syncARXToNetwork();
     void applyNetworkRoleBlocking();
 
-    ListWithExtremes zadana;
-    ListWithExtremes regulowana;
-    ListWithExtremes pidP;
-    ListWithExtremes pidI;
-    ListWithExtremes pidD;
-    ListWithExtremes sterowanie;
-    ListWithExtremes uchyb;
-    // QCPGraph *graph1;
-    // QCPGraph *graph2;
-    // QCPGraph *graph3;
-    // QCPGraph *graph4;
-    // QCPGraph *graph5;
+    ListWithExtremes pamiec_wykresow;
 
 
 };

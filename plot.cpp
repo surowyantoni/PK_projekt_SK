@@ -1,15 +1,21 @@
 #include "plot.hpp"
 #include "qpainter.h"
 
-Plot::Plot(QWidget *parent)
+Plot::Plot(ListWithExtremes* lista, QWidget *parent)
     : QWidget{parent}
+    , lista{lista}
 {}
 
-static inline QPointF mapPoint(const QPointF &p, const QRectF &src, const QRectF &dst)
+inline QPointF Plot::mapPoint(const QPointF &p, const QRectF &src, const QRectF &dst)
 {
     double x = dst.left() + (p.x() - src.left()) * dst.width()  / src.width();
     double y = dst.top()  + (p.y() - src.top())  * dst.height() / src.height();
     return QPointF(x, y);
+}
+
+inline double mapValue(double min_src, double max_src, double min_dest, double max_dest, double value)
+{
+    return min_dest + (value - min_src) * (max_dest - min_dest) / (max_src - min_src);
 }
 
 void Plot::paintEvent(QPaintEvent *event)
@@ -17,73 +23,194 @@ void Plot::paintEvent(QPaintEvent *event)
     Q_UNUSED(event);
     QPainter p(this);
     p.fillRect(rect(), Qt::white);
-
-    if(serie.size() == 0) return;
-    if(serie[0].dane->getList()->size() == 0) return;
     p.setPen(Qt::black);
-    QRect widget = rect();
-
-    double maxWart = serie[0].dane->max();
-    double minWart = serie[0].dane->min();
+    QRect caly = rect();
 
 
-    double szerokosc = serie[0].dane->getList()->last().x() - serie[0].dane->getList()->first().x();
+    static const QColor COLOR_ZADANA = QColor::fromRgb(200, 10, 10);
+    static const QColor COLOR_REGULOWANA = QColor::fromRgb(10, 200, 10);
+    static const QColor COLOR_STEROWANIE = QColor::fromRgb(10, 10, 200);
+    static const QColor COLOR_UCHYB = QColor::fromRgb(10, 200, 200);
+    static const QColor COLOR_PID_P = QColor::fromRgb(200, 200, 10);
+    static const QColor COLOR_PID_I = QColor::fromRgb(200, 10, 200);
+    static const QColor COLOR_PID_D = QColor::fromRgb(100, 0, 250);
+    constexpr double STOSUNKI_ROZMIARU[] = { 5.0, 2.0, 2.0, 2.0};
+    constexpr double STOSUNKI_ROZMIARU_SUMA = 11.0;
+    constexpr int ODSTEPY_PX = 20;
+    constexpr int MARGINES_WYKRESOW = 10;
 
-    if(szerokosc == 0) return;
-    int offset = widget.width() / szerokosc;
-    for (int var = 0; var < szerokosc; var++)
+
+    const UAR::Tick MAX_VALUES = {
+        .pid = PIDTick{lista->PIDPMax(),
+                       lista->PIDIMax(),
+                       lista->PIDDMax()},
+        .sterowanie = lista->SterowanieMax(),
+        .uchyb = lista->UchybMax(),
+        .wartoscRegulowana = lista->WartoscRegulwoanaMax(),
+        .wartoscZadana = lista->WartoscZadanaMax(),
+    };
+    const double MAX_PID = std::max({MAX_VALUES.pid->P,  MAX_VALUES.pid->I, MAX_VALUES.pid->D});
+    const double MAX_REG_ZAD = std::max(MAX_VALUES.wartoscRegulowana, MAX_VALUES.wartoscZadana);
+
+    const UAR::Tick MIN_VALUES = {
+      .pid = PIDTick{lista->PIDPMin(),
+                     lista->PIDIMin(),
+                     lista->PIDDMin()},
+      .sterowanie = lista->SterowanieMin(),
+      .uchyb = lista->UchybMin(),
+      .wartoscRegulowana = lista->WartoscRegulwoanaMin(),
+      .wartoscZadana = lista->WartoscZadanaMin(),
+      };
+    const double MIN_PID = std::min({MIN_VALUES.pid->P,  MIN_VALUES.pid->I, MIN_VALUES.pid->D});
+    const double MIN_REG_ZAD = std::min(MIN_VALUES.wartoscRegulowana, MIN_VALUES.wartoscZadana);
+
+
+    const std::pair<double, double> BRZEGOWE[] = {
+        std::make_pair(MAX_REG_ZAD, MIN_REG_ZAD),
+        std::make_pair(MAX_VALUES.sterowanie, MIN_VALUES.sterowanie),
+        std::make_pair(MAX_VALUES.uchyb, MIN_VALUES.uchyb),
+        std::make_pair(MAX_PID, MIN_PID),
+    };
+    const int OFFSET_LEFT_BRZEGOWE = 30;
+
+
+    const QRect ramka_zadana_i_reg =
+        QRect(caly.topLeft().x() + ODSTEPY_PX + OFFSET_LEFT_BRZEGOWE,
+              caly.topLeft().y() + ODSTEPY_PX,
+              caly.width() - ODSTEPY_PX * 2 - OFFSET_LEFT_BRZEGOWE,
+              (caly.height() - ODSTEPY_PX * 5) / STOSUNKI_ROZMIARU_SUMA * STOSUNKI_ROZMIARU[0]);
+    const QRect ramka_sterowanie =
+        QRect(caly.topLeft().x() + ODSTEPY_PX + OFFSET_LEFT_BRZEGOWE,
+              ramka_zadana_i_reg.bottomLeft().y() + ODSTEPY_PX,
+              caly.width() - ODSTEPY_PX * 2 - OFFSET_LEFT_BRZEGOWE,
+              (caly.height() - ODSTEPY_PX * 5) / STOSUNKI_ROZMIARU_SUMA * STOSUNKI_ROZMIARU[1]);
+    const QRect ramka_uchyb =
+        QRect(caly.topLeft().x() + ODSTEPY_PX + OFFSET_LEFT_BRZEGOWE,
+              ramka_sterowanie.bottomLeft().y() + ODSTEPY_PX,
+              caly.width() - ODSTEPY_PX * 2 - OFFSET_LEFT_BRZEGOWE,
+              (caly.height() - ODSTEPY_PX * 5) / STOSUNKI_ROZMIARU_SUMA * STOSUNKI_ROZMIARU[2]);
+    const QRect ramka_pid =
+        QRect(caly.topLeft().x() + ODSTEPY_PX + OFFSET_LEFT_BRZEGOWE,
+              ramka_uchyb.bottomLeft().y() + ODSTEPY_PX,
+              caly.width() - ODSTEPY_PX * 2 - OFFSET_LEFT_BRZEGOWE,
+              (caly.height() - ODSTEPY_PX * 5) / STOSUNKI_ROZMIARU_SUMA * STOSUNKI_ROZMIARU[3]);
+
+    const QRect* RAMKI[] = {
+        &ramka_zadana_i_reg,
+        &ramka_sterowanie,
+        &ramka_uchyb,
+        &ramka_pid
+    };
+    static const QString TYTULY_WYKRESOW[] = {
+        "Wartosc zadana i regulowana",
+        "Sterowanie",
+        "Uchyb",
+        "Składowe PID",
+    };
+
+
+    p.drawText(ramka_pid.center().x(), ramka_pid.bottom() + ODSTEPY_PX, "Czas [s]");
+
+    static const QPoint PODZIALKA_Y = QPoint(- OFFSET_LEFT_BRZEGOWE / 2, 0);
+    static const QPen GRUBY_PEN = QPen(Qt::BrushStyle::SolidPattern, 2);
+    int idx_ramki = 0;
+    for(auto ramka : RAMKI)
     {
-        p.drawLine(widget.topLeft() + QPoint(var * offset , 0), widget.bottomLeft() +QPoint(var * offset , 0));
-        p.drawText(widget.bottomLeft() + QPoint(var * offset , -20), QString::number(offset));
+        p.setBrush(Qt::BrushStyle::CrossPattern);
+        const_cast<QBrush&>(p.brush()).setColor(Qt::gray);
+        p.setPen(GRUBY_PEN);
+        p.drawRect(*ramka);
+
+        p.save();
+        p.translate(ramka->bottomLeft());
+        p.rotate(-90);
+        p.drawText(QRect(0, 0, ramka->height(), -ODSTEPY_PX), Qt::AlignCenter, TYTULY_WYKRESOW[idx_ramki]);
+        p.restore();
+        p.drawLine(ramka->topLeft() + QPoint(0, MARGINES_WYKRESOW), ramka->topLeft() + PODZIALKA_Y + QPoint(0, MARGINES_WYKRESOW));
+        p.drawLine(ramka->bottomLeft() + QPoint(0, -MARGINES_WYKRESOW), ramka->bottomLeft() + PODZIALKA_Y + QPoint(0, -MARGINES_WYKRESOW));
+
+        p.drawText(ramka->topLeft() + PODZIALKA_Y + QPoint(-OFFSET_LEFT_BRZEGOWE , ODSTEPY_PX+MARGINES_WYKRESOW), QString::number(BRZEGOWE[idx_ramki].first, 10, 3));
+        p.drawText(ramka->bottomLeft() + PODZIALKA_Y + QPoint(-OFFSET_LEFT_BRZEGOWE , -ODSTEPY_PX-MARGINES_WYKRESOW), QString::number(BRZEGOWE[idx_ramki].second, 10, 3));
+
+        idx_ramki++;
     }
 
-    p.drawLine(widget.topLeft() + QPoint(5, 5), widget.topRight() + QPoint(-5, 5));
-    p.drawText(widget.topLeft() + QPoint(5, 5 + 12), QString::number(minWart));
-    p.drawLine(widget.bottomLeft() + QPoint(5, -16), widget.bottomRight() + QPoint(-5, -16));
-    p.drawText(widget.bottomLeft() + QPoint(5, -(8 + 12)), QString::number(maxWart));
+    if(lista->howManyPoints() == 0) return; // nie rysuj pustych wykresów
 
-    if(minWart < 0.0 && 0.0 < maxWart)
+    if (lista->howManyPoints() <= 2) return;
+    auto punkt =  lista->lista.rbegin();
+    int czas_on_plot = mapValue(lista->CzasMin(), lista->CzasMax(), ramka_zadana_i_reg.left(), ramka_zadana_i_reg.right(), punkt->second);
+
+    QPoint last_sterowanie = QPoint(czas_on_plot, mapValue(MIN_VALUES.sterowanie, MAX_VALUES.sterowanie, ramka_sterowanie.bottom() - MARGINES_WYKRESOW, ramka_sterowanie.top() + MARGINES_WYKRESOW, punkt->first.sterowanie));
+    QPoint last_uchyb = QPoint(czas_on_plot, mapValue(MIN_VALUES.uchyb, MAX_VALUES.uchyb, ramka_uchyb.bottom() -MARGINES_WYKRESOW, ramka_uchyb.top()+MARGINES_WYKRESOW, punkt->first.uchyb));
+    QPoint last_regulowana = QPoint(czas_on_plot, mapValue(MIN_REG_ZAD, MAX_REG_ZAD, ramka_zadana_i_reg.bottom()-MARGINES_WYKRESOW, ramka_zadana_i_reg.top()+MARGINES_WYKRESOW, punkt->first.wartoscRegulowana));
+    QPoint last_zadana = QPoint(czas_on_plot, mapValue(MIN_REG_ZAD, MAX_REG_ZAD, ramka_zadana_i_reg.bottom()-MARGINES_WYKRESOW, ramka_zadana_i_reg.top()+MARGINES_WYKRESOW, punkt->first.wartoscZadana));
+    QPoint last_pid_P;
+    QPoint last_pid_I;
+    QPoint last_pid_D;
+    bool last_pid = punkt->first.pid.has_value();
+    if(last_pid)
     {
-        // p.drawLine(widget.center() + QPoint(5, -16), widget.bottomRight() + QPoint(-5, -16));
-        // p.drawText(widget.bottomLeft() + QPoint(5, -(8 + 12)), "0.0");
+        last_pid_P = QPoint(czas_on_plot, mapValue(MIN_PID, MAX_PID, ramka_pid.bottom()-MARGINES_WYKRESOW, ramka_pid.top()+MARGINES_WYKRESOW, punkt->first.pid->P));
+        last_pid_I = QPoint(czas_on_plot, mapValue(MIN_PID, MAX_PID, ramka_pid.bottom()-MARGINES_WYKRESOW, ramka_pid.top()+MARGINES_WYKRESOW, punkt->first.pid->I));
+        last_pid_D = QPoint(czas_on_plot, mapValue(MIN_PID, MAX_PID, ramka_pid.bottom()-MARGINES_WYKRESOW, ramka_pid.top()+MARGINES_WYKRESOW, punkt->first.pid->D));
     }
+    static const constexpr int SZEROKOSC_LINII = 2;
 
-    for (int i = 0; i < serie.size(); ++i)
+    for (size_t idx = 1; idx < lista->howManyPoints() - 1; ++idx)
     {
-        auto& seria = serie[i];
-        p.setRenderHint(QPainter::TextAntialiasing);
-        p.setPen(Qt::black);
-
-        QFont font("Arial", 9);
-        p.setFont(font);
-        p.drawText(widget.bottomRight() + QPointF(-200, -12 * (i+1) - 10), seria.nazwa);
-
-
-        p.fillRect(QRect(widget.bottomRight() + QPoint(-210, -12 * (i+1) - 20), QSize(8, 8)), seria.kolor);
-        p.drawRect(QRect(widget.bottomRight() + QPoint(-210, -12 * (i+1) - 20), QSize(8, 8)));
-        QRectF przestrzenWykresu(serie[0].dane->getList()->first().x(), serie[0].dane->min(), szerokosc, wysokosc);
-
-        // qDebug() << przestrzenWykresu.width();
-        // qDebug() << "H" << przestrzenWykresu.height();
-        // p.drawPoint(mapPoint(point, przestrzenWykresu, widget));
-
-        QVector<QPointF> punkty;
-        punkty.reserve(seria.dane->getList()->size());
-        for(auto& point : *seria.dane->getList())
+        czas_on_plot = mapValue(lista->CzasMin(), lista->CzasMax(), ramka_zadana_i_reg.left(), ramka_zadana_i_reg.right(), punkt->second);
+        QPoint sterowanie = QPoint(czas_on_plot, mapValue(MIN_VALUES.sterowanie, MAX_VALUES.sterowanie, ramka_sterowanie.bottom() - MARGINES_WYKRESOW, ramka_sterowanie.top() + MARGINES_WYKRESOW, punkt->first.sterowanie));
+        QPoint uchyb = QPoint(czas_on_plot, mapValue(MIN_VALUES.uchyb, MAX_VALUES.uchyb, ramka_uchyb.bottom()-MARGINES_WYKRESOW, ramka_uchyb.top()+MARGINES_WYKRESOW, punkt->first.uchyb));
+        QPoint regulowana = QPoint(czas_on_plot, mapValue(MIN_REG_ZAD, MAX_REG_ZAD, ramka_zadana_i_reg.bottom()-MARGINES_WYKRESOW, ramka_zadana_i_reg.top()+MARGINES_WYKRESOW, punkt->first.wartoscRegulowana));
+        QPoint zadana = QPoint(czas_on_plot, mapValue(MIN_REG_ZAD, MAX_REG_ZAD, ramka_zadana_i_reg.bottom()-MARGINES_WYKRESOW, ramka_zadana_i_reg.top()+MARGINES_WYKRESOW, punkt->first.wartoscZadana));
+        QPoint pid_P;
+        QPoint pid_I;
+        QPoint pid_D;
+        if(punkt->first.pid.has_value())
         {
-            punkty.append(mapPoint(point, przestrzenWykresu, widget));
+            pid_P = QPoint(czas_on_plot, mapValue(MIN_PID, MAX_PID, ramka_pid.bottom()-MARGINES_WYKRESOW, ramka_pid.top()+MARGINES_WYKRESOW, punkt->first.pid->P));
+            pid_I = QPoint(czas_on_plot, mapValue(MIN_PID, MAX_PID, ramka_pid.bottom()-MARGINES_WYKRESOW, ramka_pid.top()+MARGINES_WYKRESOW, punkt->first.pid->I));
+            pid_D = QPoint(czas_on_plot, mapValue(MIN_PID, MAX_PID, ramka_pid.bottom()-MARGINES_WYKRESOW, ramka_pid.top()+MARGINES_WYKRESOW, punkt->first.pid->D));
         }
-        p.setPen(seria.kolor);
-        for(size_t i = 0; i < punkty.size() - 1; i++)
-        {
-            p.drawLine(punkty[i], punkty[i + 1]);
-            // qDebug() << mapPoint(point, przestrzenWykresu, widget);
-        }
-        minWart = std::min(minWart, seria.dane->min());
-        maxWart = std::max(maxWart, seria.dane->max());
 
+
+        // Rysowanie punktów, poprzedni policzony i obecny
+        p.setPen(QPen(QBrush(COLOR_STEROWANIE), SZEROKOSC_LINII));
+        p.drawLine(last_sterowanie, sterowanie);
+        p.setPen(QPen(QBrush(COLOR_UCHYB), SZEROKOSC_LINII));
+        p.drawLine(last_uchyb, uchyb);
+        p.setPen(QPen(QBrush(COLOR_REGULOWANA), SZEROKOSC_LINII));
+        p.drawLine(last_regulowana, regulowana);
+        p.setPen(QPen(QBrush(COLOR_ZADANA), SZEROKOSC_LINII));
+        p.drawLine(last_zadana, zadana);
+        if(punkt->first.pid.has_value())
+        {
+            if(last_pid)
+            {
+                p.setPen(QPen(QBrush(COLOR_PID_P), SZEROKOSC_LINII));
+                p.drawLine(last_pid_P, pid_P);
+                p.setPen(QPen(QBrush(COLOR_PID_I), SZEROKOSC_LINII));
+                p.drawLine(last_pid_I, pid_I);
+                p.setPen(QPen(QBrush(COLOR_PID_D), SZEROKOSC_LINII));
+                p.drawLine(last_pid_D, pid_D);
+            }
+            last_pid_P = pid_P;
+            last_pid_I = pid_I;
+            last_pid_D = pid_D;
+        }
+        last_sterowanie = sterowanie;
+        last_uchyb = uchyb;
+        last_regulowana = regulowana;
+        last_zadana = zadana;
+        last_pid = punkt->first.pid.has_value();
+        punkt++;
     }
-    wysokosc = maxWart - minWart;
+
+
+    //TODO
+    //opisy serii
+    // rysowanie czasu
 }
 
 

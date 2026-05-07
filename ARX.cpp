@@ -1,76 +1,97 @@
 #include "ARX.hpp"
+#include <QDataStream>
 #include <random>
 
 //konstruktory
 ARX::ARX(std::vector<Wspolczynnik>&& wspolczynniki, int k, double z)
     : limityZadana(MinMaxClamp(-10.0, 10.0, true))
     , limityRegulowana(MinMaxClamp(-10.0, 10.0, true))
-    , k(this, k)
-    , z(z)
-    , U(std::deque<double>())
-    , Y(std::deque<double>())
-    , wspolczynniki(wspolczynniki)
+    , k{k, this}
+    , z{z, this}
+    , U{}
+    , Y{}
+    , wspolczynniki{wspolczynniki, this}
 {
     reset();
 }
 
-ARX ARX::fromJSON(QJsonObject& json)
-{
-    return ARX();
-}
 double ARX::generujZaklocenie()
 {
     static std::random_device rd;
     static std::mt19937 generator(rd());
 
-    if(z == 0)
+    if(z.get() == 0)
         return 0.0;
 
-    std::normal_distribution<double> distrib(0.0, z);
+    std::normal_distribution<double> distrib(0.0, z.get());
     return distrib(generator);
 }
 
 void ARX::reset()
 {
-    U.use().clear();
-    Y.use().clear();
-    for (size_t i = 0; i < wspolczynniki.get().size() + k; i++)
-        U.use().push_back(0.0);
-    for (size_t i = 0; i < wspolczynniki.get().size(); i++)
-        Y.use().push_back(0.0);
+    U.clear();
+    Y.clear();
+    for (size_t i = 0; i < wspolczynniki.value.size() + k.get(); i++)
+        U.push_back(0.0);
+    for (size_t i = 0; i < wspolczynniki.value.size(); i++)
+        Y.push_back(0.0);
 }
 double ARX::symuluj(double u)
 {
-    U.use().push_front(limityZadana.clamp(u));
-    U.use().pop_back();
+    U.push_front(limityZadana.clamp(u));
+    U.pop_back();
 
     double b = 0.0, a = 0.0;
 
-
-    for (size_t i = 0; i < wspolczynniki.get().size(); i++)
+    for (size_t i = 0; i < wspolczynniki.value.size(); i++)
     {
-        b += wspolczynniki.get()[i].B * U.get()[i + k]; // Mnożenie wektora B przez historię wejść U
-        a += wspolczynniki.get()[i].A * Y.get()[i]; // Mnożenie wektora A przez historię wyjść Y
+        b += wspolczynniki.value[i].B * U[i + k.get()]; // Mnożenie wektora B przez historię wejść U
+        a += wspolczynniki.value[i].A * Y[i]; // Mnożenie wektora A przez historię wyjść Y
     }
     double y = b - a + generujZaklocenie();
 
     y = limityRegulowana.clamp(y);
 
-    Y.use().push_front(y);
-    Y.use().pop_back();
+    Y.push_front(y);
+    Y.pop_back();
     return y;
 }
 
 
 void ARX::aktualizacjaBuforowPoZmianieOpoznienia()
 {
- // TODO
+    while(k.get() + wspolczynniki.value.size() < U.size())
+    {
+        U.pop_back();
+    }
+    while(k.get() + wspolczynniki.value.size() > U.size())
+    {
+        U.push_back(0.0);
+    }
 }
 
 QJsonObject ARX::toJSON() const
 {
-    QJsonObject arx;
-    // TODO
-    throw "U idiot! not implemented yet";
-    return arx;
+    return QJsonObject();
 }
+void ARX::fromJSON(QJsonObject& json)
+{
+
+}
+QByteArray ARX::toByteArray() const
+{
+    QByteArray data;
+    QDataStream s(&data, QIODevice::WriteOnly);
+    QByteArray wspolczynniki_arr = wspolczynniki.toByteArray();
+    s << k.get() << z.get() << wspolczynniki_arr;
+    return data;
+}
+void ARX::fromByteArray(QByteArray& data)
+{
+    QDataStream s(&data, QIODevice::ReadOnly);
+    QByteArray wspolczynniki_arr;
+    s >> k.value >> z.value >> wspolczynniki_arr;
+    wspolczynniki.fromByteArray(wspolczynniki_arr);
+    aktualizacjaBuforowPoZmianieOpoznienia();
+}
+

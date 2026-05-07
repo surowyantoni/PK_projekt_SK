@@ -3,6 +3,8 @@
 #include <qlist.h>
 #include <qpoint.h>
 #include <map>
+#include "UAR.h"
+#include "WarstwaUslug.h"
 
 
 /**
@@ -11,15 +13,36 @@
  */
 class ListWithExtremes
 {
-    QList<QPointF> list;
-    std::map<double, uint16_t> values;
-public:
+    friend class Plot;
+    std::list<std::pair<UAR::Tick, WarstaUslug::Czas>> lista;
+    std::map<double, uint16_t> val_sterowanie;
+    std::map<double, uint16_t> val_zadana;
+    std::map<double, uint16_t> val_regulwoana;
+    std::map<double, uint16_t> val_uchyb;
+    std::map<double, uint16_t> val_pid_P;
+    std::map<double, uint16_t> val_pid_I;
+    std::map<double, uint16_t> val_pid_D;
 
+public:
     ListWithExtremes();
-    QList<QPointF>* getList();
-    qreal max();
-    qreal min();
-    void appendLastValue(QPointF new_point);
+    double SterowanieMax();
+    double SterowanieMin();
+    double WartoscRegulwoanaMax();
+    double WartoscRegulwoanaMin();
+    double WartoscZadanaMax();
+    double WartoscZadanaMin();
+    double UchybMax();
+    double UchybMin();
+    double PIDPMax();
+    double PIDPMin();
+    double PIDIMax();
+    double PIDIMin();
+    double PIDDMax();
+    double PIDDMin();
+    WarstaUslug::Czas CzasMax();
+    WarstaUslug::Czas CzasMin();
+    size_t howManyPoints();
+    void appendLastValue(std::pair<UAR::Tick, WarstaUslug::Czas>& new_point);
     void deleteFirstValue();
     void clear();
 };

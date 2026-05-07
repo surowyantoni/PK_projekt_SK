@@ -5,23 +5,16 @@
 #include <QObject>
 #include <QWidget>
 
-struct Seria
-{
-    ListWithExtremes* dane;
-    QColor kolor;
-    QString nazwa;
-};
-
 class Plot : public QWidget
 {
     Q_OBJECT
+    static inline QPointF mapPoint(const QPointF &p, const QRectF &src, const QRectF &dst);
 public:
-    explicit Plot(QWidget *parent = nullptr);
-    std::vector<Seria> serie = std::vector<Seria>();
+    explicit Plot(ListWithExtremes* lista, QWidget *parent = nullptr);
 signals:
 protected:
     void paintEvent(QPaintEvent *event) override;
-    double wysokosc = 1.0;
+    ListWithExtremes* lista;
 };
 
 #endif // PLOT_HPP

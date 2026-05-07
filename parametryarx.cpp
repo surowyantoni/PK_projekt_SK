@@ -26,7 +26,7 @@ ParametryARX::ParametryARX(MainWindow *parentWindow)
         ui->verticalFrame_2->setLayout(dynamicLayoutVectorB);
     }
 
-    std::vector<ARX::Wspolczynnik> vec = m_parent->uslugi.arx.wspolczynniki;
+    std::vector<ARX::Wspolczynnik> vec = m_parent->uslugi.arx.wspolczynniki.value;
 
     if (vec.empty())
     {
@@ -44,9 +44,9 @@ ParametryARX::ParametryARX(MainWindow *parentWindow)
         }
     }
 
-    ui->opoznienie->setValue(m_parent->uslugi.arx.k);
+    ui->opoznienie->setValue(m_parent->uslugi.arx.k.get());
 
-    ui->szum->setValue(m_parent->uslugi.arx.z);
+    ui->szum->setValue(m_parent->uslugi.arx.z.get());
     ui->checkboxOgraniczenia->setChecked(m_parent->uslugi.arx.limityZadana.getActive());
 
     ui->odWartoscSterowania->setValue(m_parent->uslugi.arx.limityZadana.getMin());
@@ -212,8 +212,8 @@ void ParametryARX::refreshFromService()
 
     ARX &model = m_parent->uslugi.arx;
 
-    ui->opoznienie->setValue(model.k);
-    ui->szum->setValue(model.z);
+    ui->opoznienie->setValue(model.k.get());
+    ui->szum->setValue(model.z.get());
 
     ui->odWartoscSterowania->setValue(model.limityZadana.getMin());
     ui->doWartoscSterowania->setValue(model.limityZadana.getMax());
@@ -234,7 +234,7 @@ void ParametryARX::refreshFromService()
     }
 
     // Dodanie nowych pól na podstawie współczynników z serwisu
-    for (const auto& w : model.wspolczynniki.get())
+    for (const auto& w : model.wspolczynniki.value)
     {
         addNewFieldVectorA(w.A);
         addNewFieldVectorB(w.B);
@@ -265,11 +265,11 @@ void ParametryARX::on_buttonBox_accepted()
         vec[var].B = vecB[var];
     }
 
-    m_parent->uslugi.arx.wspolczynniki.set(vec);
-    m_parent->uslugi.arx.k = (readOpoznienie());
+    m_parent->uslugi.arx.wspolczynniki.value = vec;
+    m_parent->uslugi.arx.k.set(readOpoznienie());
     m_parent->uslugi.arx.limityZadana.setMax(readMax());
     m_parent->uslugi.arx.limityZadana.setMin(readMin());
-    m_parent->uslugi.arx.z = readSzum();
+    m_parent->uslugi.arx.z.set(readSzum());
     m_parent->uslugi.arx.limityZadana.setActive(readCzyOpoznienie());
 
     m_parent->uslugi.arx.limityZadana.setMax(ui->doWartoscRegulowania->value());
@@ -279,6 +279,6 @@ void ParametryARX::on_buttonBox_accepted()
 
     m_parent->ui->pushButton_arx->setEnabled(true);
 
-    m_parent->syncARXToNetwork();
+    m_parent->uslugi.netService.sendArxConfig();
     m_parent->uslugi.updateUI();
 }

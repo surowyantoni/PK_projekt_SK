@@ -1,15 +1,15 @@
 // TU includy:
 
+
+#include "DEFINITIONS.hpp"
+
+#ifdef DEBUG
 #include <iostream>
 #include <iomanip>
 #include "ARX.hpp"
 #include "RegulatorPID.h"
 #include "RegulatorOnOFF.h" // Tylko sekcje 3 osobowe
 #include "UAR.h"
-
-#include "DEFINITIONS.hpp"
-
-#ifdef DEBUG
 
 //Funkcje pomocnicze dla testów:
 

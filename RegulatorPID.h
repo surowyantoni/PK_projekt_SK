@@ -1,4 +1,5 @@
 #pragma once
+#include "qjsonobject.h"
 #include "utils.hpp"
 #include <cassert>
 
@@ -14,26 +15,32 @@ struct PIDTick
 class RegulatorPID
 {
 public:
+    SERIALIZABLE
     enum SposobLiczeniaCalki { Zewnetrzne = 0, Wewnetrzne = 1 };
 
     MinMaxClamp limityWyjscia;
-    PROPERTY(bool, AntiWindup)
+    PROP(bool, RegulatorPID)
+        GETTER(bool)
+        SETTER(bool)
     } antiWindupActive;
-    PROPERTY(double, WspolczynnikiProporcjonalny)
+    PROP(double, RegulatorPID)
+        GETTER(double)
         void set(const double& value)
         {
             assert(value >= 0.0);
             this->value = value;
         }
     } k;
-    PROPERTY(double, WspolczynnikiCalkowania)
+    PROP(double, RegulatorPID)
+        GETTER(double)
         void set(const double& value)
         {
             assert(value >= 0.0);
             this->value = value;
         }
     } Ti;
-    PROPERTY(double, WspolczynnikiRozniczkowania)
+    PROP(double, RegulatorPID)
+        GETTER(double)
         void set(const double& value)
         {
             assert(value >= 0.0);
@@ -41,10 +48,11 @@ public:
         }
     } Td;
 
-    PROPERTY_ACCESS(SposobLiczeniaCalki, jakLiczymyCzescCalkujaca)
+    PROP(SposobLiczeniaCalki, RegulatorPID)
+        GETTER(SposobLiczeniaCalki)
         void set(const SposobLiczeniaCalki& value)
         {
-            static_cast<RegulatorPID*>(owner)->zmienSposobLiczeniaCalki(value);
+            owner->zmienSposobLiczeniaCalki(value);
             this->value = value;
         }
     } sposobLiczeniaCalki;

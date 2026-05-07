@@ -44,10 +44,10 @@ double UAR::symuluj(double wartoscZadana)
     return poprzednieWyjscie;
 }
 
-UAR::Tick UAR::symuluj()
+UAR::Tick UAR::symuluj(uint32_t interwal)
 {
     Tick tick;
-    double wartoscZadana = gen->generuj();
+    double wartoscZadana = gen->generuj(interwal);
     tick.wartoscZadana = wartoscZadana;
 
     tick.uchyb = wartoscZadana - poprzednieWyjscie;
@@ -66,6 +66,38 @@ UAR::Tick UAR::symuluj()
 
     tick.wartoscRegulowana = ARX->symuluj(tick.sterowanie);
     poprzednieWyjscie = tick.wartoscRegulowana;
+    return tick;
+}
+double UAR::symulujObiekt(double sterowanie)
+{
+    return ARX->symuluj(sterowanie);
+}
+
+void UAR::zaktualizujPoprzendieWyjscie(double wyjscie)
+{
+    poprzednieWyjscie = wyjscie;
+}
+UAR::Tick UAR::symulujBezObiektu(uint32_t interwal)
+{
+    Tick tick;
+    tick.wartoscZadana = gen->generuj(interwal);
+
+    tick.uchyb = tick.wartoscZadana - poprzednieWyjscie;
+
+    switch (getWybranyRegulator())
+    {
+    case RodzajSterowania::PID:
+        tick.pid = PID->symuluj(tick.uchyb);
+        tick.sterowanie = PID->limityWyjscia.clamp(tick.pid.value());
+        break;
+    case RodzajSterowania::OnOff:
+        tick.pid = std::nullopt;
+        tick.sterowanie = OnOff->symuluj(tick.uchyb);
+        break;
+    }
+
+    // Nie ustawione, bo dostenimy wartość dopiero gdy obiekt odpowie
+    tick.wartoscRegulowana = 0.0;
     return tick;
 }
 

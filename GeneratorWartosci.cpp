@@ -1,4 +1,5 @@
 ﻿#include "GeneratorWartosci.h"
+#include "qabstractsocket.h"
 #define _USE_MATH_DEFINES
 #include <cmath>
 
@@ -12,32 +13,13 @@ GeneratorWartosci::GeneratorWartosci(double amplituda, double skladowaStala, uin
     krok (0)
 {}
 
-double GeneratorWartosci::generuj()
+double GeneratorWartosci::generuj(uint32_t przeskok)
 {
-    // double w;
-    // int cykli_na_okres = czasRzeczywisty / (static_cast<double>(czasTaktowania) / 1000.0);
-    // double tempSin;
-
-    // w = skladowaStala;
-    // if (typSygnalu == TypSygnalu::SINUS) { //sinus
-    //     tempSin = krok % cykli_na_okres;
-    //     tempSin /= cykli_na_okres;
-    //     tempSin *= 2 * M_PI; // zamiana na radiany
-
-    //     w += amplituda * std::sin(tempSin);
-    // } else { //kwadrat
-    //     if (krok % cykli_na_okres < wypelnienie * cykli_na_okres)
-    //         w += amplituda;
-    // }
-    // krok++;
-    // if (krok >= cykli_na_okres)
-    //     krok = 0;
-    // return w;
     double wartosc = 0.0;
-    if(krok % okres == 0) krok = 0;
-    switch (typSygnalu) {
+    if(krok > okres.get()) krok = okres.get() % krok;
+    switch (typSygnalu.get()) {
     case TypSygnalu::KWADRAT:
-        wartosc += ((miejsceWCyklu() < wypelnienie ? 1.0 : 0.0));
+        wartosc += ((miejsceWCyklu() < wypelnienie.get() ? 1.0 : 0.0));
         break;
     case TypSygnalu::SINUS:
         wartosc += std::sin(2.0 * M_PI * (miejsceWCyklu()));
@@ -45,28 +27,44 @@ double GeneratorWartosci::generuj()
     default:
         break;
     }
-    krok++;
-    wartosc *= amplituda;
-    wartosc += skladowaStala;
+    krok+= przeskok;
+    wartosc *= amplituda.get();
+    wartosc += skladowaStala.get();
     return wartosc;
 }
 
 inline double GeneratorWartosci::miejsceWCyklu() noexcept
 {
-    return (double)krok / okres;
+    return (double)krok / okres.get();
 }
 
-QJsonObject GeneratorWartosci::toJSON()
-{
-    QJsonObject generator;
-    throw "not implemented";
-    return generator;
-}
-GeneratorWartosci GeneratorWartosci::fromJSON(QJsonObject json)
-{
-    throw "not implemented";
-}
+
 void GeneratorWartosci::reset()
 {
     krok = 0;
+}
+
+
+QJsonObject GeneratorWartosci::toJSON() const
+{
+    return QJsonObject();
+}
+void GeneratorWartosci::fromJSON(QJsonObject& json)
+{
+
+}
+QByteArray GeneratorWartosci::toByteArray() const
+{
+    QByteArray data;
+    QDataStream s(&data, QIODevice::WriteOnly);
+    s << okres.get() << amplituda.get() << skladowaStala.get() << wypelnienie.get()
+      << typSygnalu.get();
+    return data;
+}
+void GeneratorWartosci::fromByteArray(QByteArray& data)
+{
+    QDataStream s(&data, QIODevice::ReadOnly);
+
+    s >> okres.value >> amplituda.value >> skladowaStala.value >> wypelnienie.value
+        >> typSygnalu.value;
 }

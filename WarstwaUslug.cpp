@@ -4,36 +4,25 @@
 
 
 WarstaUslug::WarstaUslug()
-    : interwal(this, 200)
-    , czas(0)
-    , dziala(this, false)
+    : trybDzialania{TrybDzialania::LOCAL, this}
+    , interwal{200, this}
+    , dziala{false, this}
+    , regulacja{UAR::RodzajSterowania::PID, this}
     , arx(ARX())
     , pid(RegulatorPID())
     , onOff(RegulatorOnOff())
     , generator(GeneratorWartosci())
+    , netService(NetService(this))
     , uar(UAR(&arx, &generator, &pid))
     , timer(this)
-    , netService(new NetService(this, this))
+    , czas{0}
 {
     timer.setTimerType(Qt::PreciseTimer); // żeby działał dokładniej
-    dziala = dziala.get(); // wywoalanie settera - ustawienie timera
-    interwal = interwal.get(); // wywoalanie settera - ustawienie timera
+    dziala.set(dziala.get()); // wywoalanie settera - ustawienie timera
+    interwal.set(interwal.get()); // wywoalanie settera - ustawienie timera
     QObject::connect(&timer, &QTimer::timeout, this, &WarstaUslug::symuluj);
-}
-UAR::RodzajSterowania WarstaUslug::Regulacja()
-{
-    return uar.getWybranyRegulator();
-}
-void WarstaUslug::Regulacja(UAR::RodzajSterowania regulacja)
-{
-    switch (regulacja)
-    {
-    case UAR::RodzajSterowania::OnOff:
-        uar.setOnOff(&onOff);
-    case UAR::RodzajSterowania::PID:
-        uar.setPID(&pid);
-        break;
-    }
+    // QObject::connect(netService, &NetService::sampleReceivedFromServer, this, &WarstaUslug::sampleReceivedFromREgulatorInstanceNowINeedToForewardItToTheUARAndThenSimmulateARXReactionAndSensTheSignalBack);
+    // QObject::connect(netService, &NetService::sampleReceivedFromClient, this, &WarstaUslug::sampleReceivedFromARXObjectNowIHaveToBuildTheTickAndSendItToPlotsToUpdateThem);
 }
 
 void WarstaUslug::reset()
@@ -47,9 +36,52 @@ void WarstaUslug::reset()
 
 void WarstaUslug::symuluj()
 {
-    czas = interwal + czas;
-    emit updateCharts(uar.symuluj(), czas);
+    czas = interwal.get() + czas;
+    switch (trybDzialania.get())
+    {
+    case TrybDzialania::LOCAL:
+        emit updateCharts(uar.symuluj(interwal.get()), czas);
+        break;
+    case TrybDzialania::NET_REG:
+        ticki_do_uzupelnienia.push(uar.symulujBezObiektu(interwal.get()));
+        netService.sendSample(SimSampleFromRegulator {
+          .wartoscZadana = ticki_do_uzupelnienia.back().wartoscZadana,
+          .sterowanie = ticki_do_uzupelnienia.back().sterowanie
+        });
+        break;
+    case TrybDzialania::NET_ARX:
+        throw "WATAFQ";
+        break;
+    }
 }
+
+void WarstaUslug::sampleReceivedFromREgulatorInstanceNowINeedToForewardItToTheUARAndThenSimmulateARXReactionAndSensTheSignalBack(SimSampleFromRegulator sample)
+{
+    czas = interwal.get() + czas;
+    double wartoscRegulowana = uar.symulujObiekt(sample.sterowanie);
+    UAR::Tick tick;
+    tick.wartoscRegulowana = wartoscRegulowana;
+    tick.wartoscZadana = sample.wartoscZadana;
+    tick.sterowanie = sample.sterowanie;
+    tick.uchyb = 0.0; // TYMCZASOWO
+    tick.pid = std::nullopt;
+    emit updateCharts(tick, czas);
+
+    SimSampleFromObject newSample {wartoscRegulowana};
+    netService.sendSample(newSample);
+}
+
+void WarstaUslug::sampleReceivedFromARXObjectNowIHaveToBuildTheTickAndSendItToPlotsToUpdateThem(SimSampleFromObject sample)
+{
+    UAR::Tick tick = ticki_do_uzupelnienia.front();
+    ticki_do_uzupelnienia.pop();
+    if(ticki_do_uzupelnienia.size() > 1)
+        qDebug() << "SYMULACJA SIE NIE WYRABIA!!!!";
+    tick.wartoscRegulowana = sample.wartoscRegulowana;
+    uar.zaktualizujPoprzendieWyjscie(sample.wartoscRegulowana);
+    emit updateCharts(tick, czas);
+}
+
 
 void WarstaUslug::wczytajZPliku()
 {

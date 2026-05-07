@@ -30,18 +30,9 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QHBoxLayout" name="horizontalLayout_7" stretch="7,0">
     <item>
-     <layout class="QVBoxLayout" name="verticalLayout">
+     <layout class="QVBoxLayout" name="verticalLayout_plot">
       <item>
-       <widget class="Plot" name="plot_uchyb" native="true"/>
-      </item>
-      <item>
-       <widget class="Plot" name="plot_pid" native="true"/>
-      </item>
-      <item>
-       <widget class="Plot" name="plot_zadana_regulowana" native="true"/>
-      </item>
-      <item>
-       <widget class="Plot" name="plot_sterowanie" native="true"/>
+       <widget class="QWidget" name="plot" native="true"/>
       </item>
      </layout>
     </item>
@@ -431,7 +422,7 @@
             </font>
            </property>
            <property name="minimum">
-            <number>50</number>
+            <number>5</number>
            </property>
            <property name="maximum">
             <number>1000</number>
@@ -782,7 +773,7 @@
      <x>0</x>
      <y>0</y>
      <width>1507</width>
-     <height>27</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuMenu">
@@ -812,14 +803,6 @@
    </property>
   </action>
  </widget>
- <customwidgets>
-  <customwidget>
-   <class>Plot</class>
-   <extends>QWidget</extends>
-   <header>plot.hpp</header>
-   <container>1</container>
-  </customwidget>
- </customwidgets>
  <resources/>
  <connections/>
 </ui>
