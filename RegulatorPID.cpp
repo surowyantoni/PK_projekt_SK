@@ -62,7 +62,7 @@ RegulatorPID::RegulatorPID(double k, double Ti, double Td,
     , k{k, this}
     , Ti{Ti, this}
     , Td{Td, this}
-    , sposobLiczeniaCalki{SposobLiczeniaCalki::Wewnetrzne, this}
+    , sposobLiczeniaCalki{(SposobLiczeniaCalki)CONSTS::PID::rodzaj_calkowania, this}
     , poprzedniUchyb(0.0)
     , sumaUchybowCalkowanieZewnetrzne(0.0)
     , sumaUchybowCalkowanieWewnetrzne(0.0)

@@ -4,8 +4,8 @@
 
 RegulatorOnOff::RegulatorOnOff(double wartoscSterowania, double histereza)
     : stan(Stan::Off)
-    , histereza(histereza, this)
-    , wartoscSterowania(wartoscSterowania, this)
+    , histereza{histereza, this}
+    , wartoscSterowania{wartoscSterowania, this}
 {
 }
 

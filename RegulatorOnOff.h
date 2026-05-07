@@ -2,6 +2,7 @@
 #include "qjsonobject.h"
 #include "utils.hpp"
 #include <cassert>
+#include "DEFINITIONS.hpp"
 
 class RegulatorOnOff
 {
@@ -26,7 +27,7 @@ public:
         SETTER(double)
     } wartoscSterowania;
 
-    RegulatorOnOff(double wartoscSterowania = 2.0, double histereza = 0.1);
+    RegulatorOnOff(double wartoscSterowania = CONSTS::OnOff::sterowanie, double histereza = CONSTS::OnOff::histereza);
     double symuluj(double uchyb);
     void reset();
 };

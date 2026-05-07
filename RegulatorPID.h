@@ -2,6 +2,7 @@
 #include "qjsonobject.h"
 #include "utils.hpp"
 #include <cassert>
+#include "DEFINITIONS.hpp"
 
 struct PIDTick
 {
@@ -58,8 +59,9 @@ public:
     } sposobLiczeniaCalki;
 
 
-    RegulatorPID(double k = 0.5, double Ti = 5.0, double Td = 0.0,
-                 MinMaxClamp ograniczenia = MinMaxClamp(-100.0, 100.0, true), bool antiWindupActive = true);
+    RegulatorPID(double k = CONSTS::PID::P, double Ti = CONSTS::PID::I, double Td = CONSTS::PID::D,
+                MinMaxClamp ograniczenia = MinMaxClamp(CONSTS::PID::U_min, CONSTS::PID::U_max, CONSTS::PID::U_active),
+                bool antiWindupActive = CONSTS::PID::antiWindupActive);
     PIDTick symuluj(double uchyb);
     void reset();
     void resetCzesciCalkujacej();

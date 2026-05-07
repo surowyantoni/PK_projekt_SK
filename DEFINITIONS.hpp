@@ -34,15 +34,17 @@ namespace CONSTS
         constexpr double P = 0.5;
         constexpr double I = 5.0;
         constexpr double D = 0.0;
-        constexpr int rodzaj_calkowania = 0; //RegulatorPID::Zewnetrzne
+        constexpr int rodzaj_calkowania = 0; //::RegulatorPID::Zewnetrzne
         constexpr double U_min = -10.0;
         constexpr double U_max = 10.0;
         constexpr bool U_active = true;
+        constexpr bool antiWindupActive = true;
     }
     namespace UAR
     {
         constexpr int regulator = 1; //::UAR::RodzajSterowania::PID;
         constexpr uint32_t interwal = 50; // milisekund
+        constexpr bool started = false;
 
     }
     namespace Generator

@@ -5,9 +5,9 @@
 
 WarstaUslug::WarstaUslug()
     : trybDzialania{TrybDzialania::LOCAL, this}
-    , interwal{200, this}
-    , dziala{false, this}
-    , regulacja{UAR::RodzajSterowania::PID, this}
+    , interwal{CONSTS::UAR::interwal, this}
+    , dziala{CONSTS::UAR::started, this}
+    , regulacja{(UAR::RodzajSterowania)CONSTS::UAR::regulator, this}
     , arx(ARX())
     , pid(RegulatorPID())
     , onOff(RegulatorOnOff())

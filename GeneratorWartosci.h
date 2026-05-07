@@ -2,6 +2,7 @@
 
 #include "qjsonobject.h"
 #include "utils.hpp"
+#include "DEFINITIONS.hpp"
 
 class GeneratorWartosci
 {
@@ -12,11 +13,11 @@ public:
         KWADRAT = 0,
         SINUS = 1,
     };
-    GeneratorWartosci(double amplituda = 1.0,
-                      double skladowaStala = 0.0,
-                      uint32_t okres = 200,
-                      TypSygnalu typSygnalu = TypSygnalu::SINUS,
-                      double wypelnienie = 0.5);
+    GeneratorWartosci(double amplituda = CONSTS::Generator::amplituda,
+                      double skladowaStala = CONSTS::Generator::skladowaStala,
+                      uint32_t okres = secondsToMili(CONSTS::Generator::okres),
+                      TypSygnalu typSygnalu = (TypSygnalu)CONSTS::Generator::sygnal,
+                      double wypelnienie = CONSTS::Generator::wypelnienie);
 
 
     double generuj(uint32_t przeskok);

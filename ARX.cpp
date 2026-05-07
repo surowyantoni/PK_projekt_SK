@@ -4,8 +4,8 @@
 
 //konstruktory
 ARX::ARX(std::vector<Wspolczynnik>&& wspolczynniki, int k, double z)
-    : limityZadana(MinMaxClamp(-10.0, 10.0, true))
-    , limityRegulowana(MinMaxClamp(-10.0, 10.0, true))
+    : limityZadana(MinMaxClamp(CONSTS::ARX::U_min, CONSTS::ARX::U_max, CONSTS::ARX::U_active))
+    , limityRegulowana(MinMaxClamp(CONSTS::ARX::Y_min, CONSTS::ARX::Y_max, CONSTS::ARX::Y_active))
     , k{k, this}
     , z{z, this}
     , U{}
