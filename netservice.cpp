@@ -32,13 +32,13 @@ void NetService::chooseAuthWithCode(int code)
 void NetService::chooseAuthWithoutCode()
 {
     sendDataPackage(AUTH_SUCCESS);
-    emit connectionStatusChanged(true, remoteIP);
+    authenticated = true;
+    uslugi->trybDzialania.set(WarstaUslug::TrybDzialania::NET_REG);
     emit logAppend("Połączono w trybie bez autoryzacji.");
 }
 void  NetService::chooseAuthReject()
 {
     sendDataPackage(DISCONNECT_NOTIFY);
-    emit connectionStatusChanged(false, "");
     emit logAppend("Odrzucono połączenie z klientem");
 }
 void NetService::authCodeVerification(int code)
@@ -54,8 +54,6 @@ void NetService::startAsServer(int port)
     connect(server, &QTcpServer::newConnection, this, &NetService::handleNewClient);
     if (server->listen(QHostAddress::Any, port))
         emit logAppend("Serwer nasłuchuje na porcie " + QString::number(port));
-
-    uslugi->trybDzialania.set(WarstaUslug::TrybDzialania::NET_REG);
     emit uslugi->updateUI();
 }
 
@@ -76,15 +74,17 @@ void NetService::connectAsClient(QString ip, int port)
     socket->connectToHost(ip, port);
     remoteIP = ip;
 
-    uslugi->trybDzialania.set(WarstaUslug::TrybDzialania::NET_ARX);
     emit uslugi->updateUI();
 }
 
 void NetService::disconnect()
 {
-    sendDataPackage(DISCONNECT_NOTIFY);
-    emit logAppend("Połączenie zerwane!");
-    handleDisconnection();
+    if(uslugi->trybDzialania.get() != WarstaUslug::TrybDzialania::LOCAL)
+    {
+        sendDataPackage(DISCONNECT_NOTIFY);
+        emit logAppend("Połączenie zerwane!");
+        handleDisconnection();
+    }
 }
 void NetService::sendText(QString message)
 {
@@ -166,8 +166,8 @@ void NetService::handleDisconnection()
     server = nullptr;
 
     unsuccessfullAuthAttempts = 0;
+    authenticated = false;
     uslugi->trybDzialania.set(WarstaUslug::TrybDzialania::LOCAL);
-    emit connectionStatusChanged(false, "");
     emit uslugi->updateUI();
 }
 
@@ -209,7 +209,7 @@ void NetService::processDataPackage(QByteArray data)
         case AUTH_FAILED:
             if(isServer()) return;
             emit authCodeEntryRequired();
-            emit authErrorReceived("Błąd, to już twoja XXX proba");
+            emit authErrorReceived("Podałeś błędny kod");
             emit logAppend("Odrzucono próbę połączenia. Prawdopodobnie błędny kod.");
         break;
 
@@ -219,8 +219,8 @@ void NetService::processDataPackage(QByteArray data)
             {
                 sendDataPackage(AUTH_SUCCESS);
                 authenticated = true;
-                emit connectionStatusChanged(true, remoteIP);
-                emit logAppend("Połączono w trybie autoryzacji kodem.");
+                uslugi->trybDzialania.set(WarstaUslug::TrybDzialania::NET_REG);
+                emit logAppend("Połączono klienta w trybie autoryzacji kodem.");
             }
             else
             {
@@ -240,7 +240,7 @@ void NetService::processDataPackage(QByteArray data)
         case AUTH_SUCCESS:
             if(isServer()) return;
             authenticated = true;
-            emit connectionStatusChanged(true, remoteIP);
+            uslugi->trybDzialania.set(WarstaUslug::TrybDzialania::NET_ARX);
             emit logAppend("Połączenie udane! Tryb sieciowy aktywny.");
         break;
 
@@ -249,7 +249,6 @@ void NetService::processDataPackage(QByteArray data)
             break;
 
         case DISCONNECT_NOTIFY:
-            if(!authenticated) return;
             emit logAppend("Partner zakończył połączenie.");
             handleDisconnection(); // Metoda czyszcząca bez wysyłania powiadomienia (uniknięcie pętli)
             break;

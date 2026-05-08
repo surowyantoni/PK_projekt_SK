@@ -13,7 +13,7 @@ class NetService : public QObject
     Q_OBJECT
 public:
     explicit NetService(WarstaUslug* parent = nullptr);
-
+    QString remoteIP = "";
 signals:
     void connectionStatusChanged(bool connected, QString remoteIP = "");
     void logAppend(QString log);
@@ -29,6 +29,7 @@ signals:
     // void simmulationStop();
     // void sampleReceivedFromClient(SimSampleFromObject sample);
     // void sampleReceivedFromServer(SimSampleFromRegulator sample);
+
 
 
 
@@ -85,7 +86,6 @@ private:
     int unsuccessfullAuthAttempts = 0;
     bool authenticated = false;
 
-    QString remoteIP;
     int receivedPacketCounter = 0;
 };
 

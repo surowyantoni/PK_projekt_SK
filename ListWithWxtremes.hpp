@@ -44,6 +44,7 @@ public:
     size_t howManyPoints();
     void appendLastValue(std::pair<UAR::Tick, WarstaUslug::Czas>& new_point);
     void deleteFirstValue();
+    WarstaUslug::Czas timeWidth();
     void clear();
 };
 

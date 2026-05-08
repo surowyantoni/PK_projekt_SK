@@ -15,6 +15,7 @@ namespace CONSTS
     {
         constexpr int DISCOVERY_PORT = 5001;
         constexpr int MAX_AUTH_ATTEMPTS = 3;
+        constexpr int MAX_SAMPLES_LAG = 10;
     }
     namespace ARX
     {

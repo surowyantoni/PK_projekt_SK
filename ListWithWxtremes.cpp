@@ -10,6 +10,10 @@ ListWithExtremes::ListWithExtremes()
     , val_pid_I(std::map<double, uint16_t>())
     , val_pid_D(std::map<double, uint16_t>())
 {}
+WarstaUslug::Czas ListWithExtremes::timeWidth()
+{
+    return lista.front().second - lista.back().second;
+}
 
 double ListWithExtremes::SterowanieMax()
 {

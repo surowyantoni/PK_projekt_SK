@@ -25,7 +25,7 @@ SOURCES += \
     main.cpp \
     mainwindow.cpp \
     netservice.cpp \
-    parametryarx.cpp \
+    parametryarxwindow.cpp \
     plot.cpp \
     utils.cpp
 
@@ -44,14 +44,14 @@ HEADERS += \
     connectionwindow.h \
     mainwindow.h \
     netservice.h \
-    parametryarx.h \
+    parametryarxwindow.h \
     plot.hpp \
     utils.hpp
 
 FORMS += \
     connectionwindow.ui \
     mainwindow.ui \
-    parametryarx.ui
+    parametryarxwindow.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
@@ -74,13 +74,13 @@ HEADERS += \
     connectionwindow.h \
     mainwindow.h \
     netservice.h \
-    parametryarx.h \
+    parametryarxwindow.h \
     utils.hpp
 
 FORMS += \
     connectionwindow.ui \
     mainwindow.ui \
-    parametryarx.ui
+    parametryarxwindow.ui
 
 RESOURCES += \
     wzor.qrc

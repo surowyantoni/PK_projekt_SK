@@ -8,11 +8,11 @@ WarstaUslug::WarstaUslug()
     , interwal{CONSTS::UAR::interwal, this}
     , dziala{CONSTS::UAR::started, this}
     , regulacja{(UAR::RodzajSterowania)CONSTS::UAR::regulator, this}
+    , netService(NetService(this))
     , arx(ARX())
     , pid(RegulatorPID())
     , onOff(RegulatorOnOff())
     , generator(GeneratorWartosci())
-    , netService(NetService(this))
     , uar(UAR(&arx, &generator, &pid))
     , timer(this)
     , czas{0}
@@ -24,7 +24,13 @@ WarstaUslug::WarstaUslug()
     // QObject::connect(netService, &NetService::sampleReceivedFromServer, this, &WarstaUslug::sampleReceivedFromREgulatorInstanceNowINeedToForewardItToTheUARAndThenSimmulateARXReactionAndSensTheSignalBack);
     // QObject::connect(netService, &NetService::sampleReceivedFromClient, this, &WarstaUslug::sampleReceivedFromARXObjectNowIHaveToBuildTheTickAndSendItToPlotsToUpdateThem);
 }
+int WarstaUslug::getBufferFillPercentage()
+{
+    if(trybDzialania.get() == TrybDzialania::LOCAL)
+        return 0;
 
+    return (double)ticki_do_uzupelnienia.size() / CONSTS::NET::MAX_SAMPLES_LAG;
+}
 void WarstaUslug::reset()
 {
     arx.reset();
@@ -79,6 +85,7 @@ void WarstaUslug::sampleReceivedFromARXObjectNowIHaveToBuildTheTickAndSendItToPl
         qDebug() << "SYMULACJA SIE NIE WYRABIA!!!!";
     tick.wartoscRegulowana = sample.wartoscRegulowana;
     uar.zaktualizujPoprzendieWyjscie(sample.wartoscRegulowana);
+    qDebug() << "DZIAŁA ";
     emit updateCharts(tick, czas);
 }
 

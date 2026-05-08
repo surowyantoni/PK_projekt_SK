@@ -1,14 +1,13 @@
-#include "parametryarx.h"
-#include "mainwindow.h"
+#include "parametryarxwindow.h"
 #include "ui_mainwindow.h"
-#include "ui_parametryarx.h"
+#include "ui_parametryarxwindow.h"
 #include <vector>
 
-ParametryARX::ParametryARX(MainWindow *parentWindow)
-    : QDialog(parentWindow)
-    , ui(new Ui::ParametryARX)
+ParametryARXWindow::ParametryARXWindow(WarstaUslug& uslugi)
+    : QDialog()
+    , ui(new Ui::ParametryARXWindow)
+    , uslugi(uslugi)
 {
-    m_parent = parentWindow;
     ui->setupUi(this);
 
     new QVBoxLayout(ui->verticalFrame);
@@ -26,7 +25,7 @@ ParametryARX::ParametryARX(MainWindow *parentWindow)
         ui->verticalFrame_2->setLayout(dynamicLayoutVectorB);
     }
 
-    std::vector<ARX::Wspolczynnik> vec = m_parent->uslugi.arx.wspolczynniki.value;
+    std::vector<ARX::Wspolczynnik> vec = uslugi.arx.wspolczynniki.value;
 
     if (vec.empty())
     {
@@ -44,17 +43,17 @@ ParametryARX::ParametryARX(MainWindow *parentWindow)
         }
     }
 
-    ui->opoznienie->setValue(m_parent->uslugi.arx.k.get());
+    ui->opoznienie->setValue(uslugi.arx.k.get());
 
-    ui->szum->setValue(m_parent->uslugi.arx.z.get());
-    ui->checkboxOgraniczenia->setChecked(m_parent->uslugi.arx.limityZadana.getActive());
+    ui->szum->setValue(uslugi.arx.z.get());
+    ui->checkboxOgraniczenia->setChecked(uslugi.arx.limityZadana.getActive());
 
-    ui->odWartoscSterowania->setValue(m_parent->uslugi.arx.limityZadana.getMin());
-    ui->doWartoscSterowania->setValue(m_parent->uslugi.arx.limityZadana.getMax());
+    ui->odWartoscSterowania->setValue(uslugi.arx.limityZadana.getMin());
+    ui->doWartoscSterowania->setValue(uslugi.arx.limityZadana.getMax());
 }
 
 // Zmodyfikowana funkcja dodająca pole z wartością
-void ParametryARX::addNewFieldVectorA(double value)
+void ParametryARXWindow::addNewFieldVectorA(double value)
 {
     QHBoxLayout *rowLayout = new QHBoxLayout();
     QDoubleSpinBox *newSpinBox = new QDoubleSpinBox(this);
@@ -75,7 +74,7 @@ void ParametryARX::addNewFieldVectorA(double value)
 }
 
 // Zmodyfikowana funkcja dodająca pole z wartością dla B
-void ParametryARX::addNewFieldVectorB(double value)
+void ParametryARXWindow::addNewFieldVectorB(double value)
 {
     QHBoxLayout *rowLayout = new QHBoxLayout();
     QDoubleSpinBox *newSpinBox = new QDoubleSpinBox(this);
@@ -93,7 +92,7 @@ void ParametryARX::addNewFieldVectorB(double value)
     dynamicLayoutVectorB->addLayout(rowLayout);
 }
 //odczyt wszystkich pól wektora A
-std::vector<double> ParametryARX::readAllFieldsVectorA()
+std::vector<double> ParametryARXWindow::readAllFieldsVectorA()
 {
     std::vector<double> values;
     QVBoxLayout *mainLayout = qobject_cast<QVBoxLayout *>(ui->verticalFrame->layout());
@@ -118,7 +117,7 @@ std::vector<double> ParametryARX::readAllFieldsVectorA()
     return values;
 }
 //odczyt wszystkich pól wektora B
-std::vector<double> ParametryARX::readAllFieldsVectorB()
+std::vector<double> ParametryARXWindow::readAllFieldsVectorB()
 {
     std::vector<double> values;
     QVBoxLayout *mainLayout = qobject_cast<QVBoxLayout *>(ui->verticalFrame_2->layout());
@@ -143,23 +142,23 @@ std::vector<double> ParametryARX::readAllFieldsVectorB()
     return values;
 }
 
-void ParametryARX::on_addAreaVectorA_clicked()
+void ParametryARXWindow::on_addAreaVectorA_clicked()
 {
     addNewFieldVectorA();
     addNewFieldVectorB();
 }
 
-double ParametryARX::readOpoznienie()
+double ParametryARXWindow::readOpoznienie()
 {
     //   qDebug() <<"opoznienie: "<<ui->opoznienie->value();
     return ui->opoznienie->value();
 }
-double ParametryARX::readSzum()
+double ParametryARXWindow::readSzum()
 {
     //qDebug() <<"szum: "<<ui->opoznienie->value();
     return ui->szum->value();
 }
-Zakres ParametryARX::readZakresSterowania()
+Zakres ParametryARXWindow::readZakresSterowania()
 {
     Zakres zakresSterowania;
     zakresSterowania.from = ui->odWartoscSterowania->value();
@@ -168,7 +167,7 @@ Zakres ParametryARX::readZakresSterowania()
     return zakresSterowania;
 }
 
-Zakres ParametryARX::readZakresRegulowania()
+Zakres ParametryARXWindow::readZakresRegulowania()
 {
     Zakres zakresRegulowania;
     zakresRegulowania.from = ui->odWartoscRegulowania->value();
@@ -177,31 +176,31 @@ Zakres ParametryARX::readZakresRegulowania()
     return zakresRegulowania;
 }
 
-bool ParametryARX::readCzyOpoznienie()
+bool ParametryARXWindow::readCzyOpoznienie()
 {
     return ui->checkboxOgraniczenia->isChecked();
 }
 
-double ParametryARX::readRegMax()
+double ParametryARXWindow::readRegMax()
 {
     return ui->doWartoscRegulowania->value();
 }
-double ParametryARX::readRegMin()
+double ParametryARXWindow::readRegMin()
 {
     return ui->odWartoscRegulowania->value();
 }
 
-double ParametryARX::readMax()
+double ParametryARXWindow::readMax()
 {
     return ui->doWartoscSterowania->value();
 }
 
-double ParametryARX::readMin()
+double ParametryARXWindow::readMin()
 {
     return ui->odWartoscSterowania->value();
 }
 
-void ParametryARX::refreshFromService()
+void ParametryARXWindow::refreshFromService()
 {
     const QSignalBlocker bK(ui->opoznienie);
     const QSignalBlocker bZ(ui->szum);
@@ -210,15 +209,13 @@ void ParametryARX::refreshFromService()
     const QSignalBlocker bYmin(ui->odWartoscRegulowania);
     const QSignalBlocker bYmax(ui->doWartoscRegulowania);
 
-    ARX &model = m_parent->uslugi.arx;
+    ui->opoznienie->setValue(uslugi.arx.k.get());
+    ui->szum->setValue(uslugi.arx.z.get());
 
-    ui->opoznienie->setValue(model.k.get());
-    ui->szum->setValue(model.z.get());
-
-    ui->odWartoscSterowania->setValue(model.limityZadana.getMin());
-    ui->doWartoscSterowania->setValue(model.limityZadana.getMax());
-    ui->odWartoscRegulowania->setValue(model.limityRegulowana.getMin());
-    ui->doWartoscRegulowania->setValue(model.limityRegulowana.getMax());
+    ui->odWartoscSterowania->setValue(uslugi.arx.limityZadana.getMin());
+    ui->doWartoscSterowania->setValue(uslugi.arx.limityZadana.getMax());
+    ui->odWartoscRegulowania->setValue(uslugi.arx.limityRegulowana.getMin());
+    ui->doWartoscRegulowania->setValue(uslugi.arx.limityRegulowana.getMax());
 
     // CZYSZCZENIE I ODBUDOWA DYNAMICZNYCH PÓL WEKTORÓW (A i B)
     QLayoutItem *item;
@@ -234,19 +231,19 @@ void ParametryARX::refreshFromService()
     }
 
     // Dodanie nowych pól na podstawie współczynników z serwisu
-    for (const auto& w : model.wspolczynniki.value)
+    for (const auto& w : uslugi.arx.wspolczynniki.value)
     {
         addNewFieldVectorA(w.A);
         addNewFieldVectorB(w.B);
     }
 }
 
-ParametryARX::~ParametryARX()
+ParametryARXWindow::~ParametryARXWindow()
 {
     delete ui;
 }
 
-void ParametryARX::on_buttonBox_accepted()
+void ParametryARXWindow::on_buttonBox_accepted()
 {
     readAllFieldsVectorA();
     readAllFieldsVectorB();
@@ -265,20 +262,18 @@ void ParametryARX::on_buttonBox_accepted()
         vec[var].B = vecB[var];
     }
 
-    m_parent->uslugi.arx.wspolczynniki.value = vec;
-    m_parent->uslugi.arx.k.set(readOpoznienie());
-    m_parent->uslugi.arx.limityZadana.setMax(readMax());
-    m_parent->uslugi.arx.limityZadana.setMin(readMin());
-    m_parent->uslugi.arx.z.set(readSzum());
-    m_parent->uslugi.arx.limityZadana.setActive(readCzyOpoznienie());
+    uslugi.arxChange().instancja->wspolczynniki.value = vec;
+    uslugi.arxChange().instancja->k.set(readOpoznienie());
+    uslugi.arxChange().instancja->limityZadana.setMax(readMax());
+    uslugi.arxChange().instancja->limityZadana.setMin(readMin());
+    uslugi.arxChange().instancja->z.set(readSzum());
+    uslugi.arxChange().instancja->limityZadana.setActive(readCzyOpoznienie());
+    uslugi.arxChange().instancja->limityZadana.setMax(ui->doWartoscRegulowania->value());
+    uslugi.arxChange().instancja->limityZadana.setMin(ui->odWartoscRegulowania->value());
+    uslugi.arxChange().instancja->limityZadana.setActive(ui->checkboxOgraniczenia->isChecked());
 
-    m_parent->uslugi.arx.limityZadana.setMax(ui->doWartoscRegulowania->value());
-    m_parent->uslugi.arx.limityZadana.setMin(ui->odWartoscRegulowania->value());
+    if(uslugi.trybDzialania.get() != WarstaUslug::TrybDzialania::LOCAL)
+        uslugi.netService.sendArxConfig();
 
-    m_parent->uslugi.arx.limityZadana.setActive(ui->checkboxOgraniczenia->isChecked());
-
-    m_parent->ui->pushButton_arx->setEnabled(true);
-
-    m_parent->uslugi.netService.sendArxConfig();
-    m_parent->uslugi.updateUI();
+    emit uslugi.updateUI();
 }

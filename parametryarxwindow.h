@@ -1,15 +1,15 @@
-#ifndef PARAMETRYARX_H
-#define PARAMETRYARX_H
+#ifndef PARAMETRYARXWINDOW_H
+#define PARAMETRYARXWINDOW_H
 
 #include <QDialog>
 #include <QLineEdit>
 #include <QVBoxLayout>
 #include <vector>
+#include "WarstwaUslug.h"
 
-#include "mainwindow.h"
 
 namespace Ui {
-class ParametryARX;
+class ParametryARXWindow;
 }
 
 struct Zakres
@@ -18,12 +18,12 @@ struct Zakres
     double to;
 };
 
-class ParametryARX : public QDialog
+class ParametryARXWindow : public QDialog
 {
     Q_OBJECT
 
 public:
-    explicit ParametryARX(MainWindow *parentWindow);
+    explicit ParametryARXWindow(WarstaUslug& uslugi);
 
     void addNewFieldVectorA(double value = 0.0);
     void addNewFieldVectorB(double value = 0.0);
@@ -34,7 +34,7 @@ public:
     Zakres readZakresSterowania();
     Zakres readZakresRegulowania();
     bool readCzyOpoznienie();
-    ~ParametryARX();
+    ~ParametryARXWindow();
     double readMax();
     double readMin();
     double readRegMax();
@@ -48,12 +48,12 @@ private slots:
     void on_buttonBox_accepted();
 
 private:
-    Ui::ParametryARX *ui;
+    Ui::ParametryARXWindow *ui;
 
     QVBoxLayout *dynamicLayoutVectorA;
     QVBoxLayout *dynamicLayoutVectorB;
 
-    MainWindow *m_parent;
+    WarstaUslug& uslugi;
 };
 
-#endif // PARAMETRYARX_H
+#endif // PARAMETRYARXWINDOW_H

@@ -28,7 +28,12 @@ public:
 
     PROP(TrybDzialania, WarstaUslug)
         GETTER(TrybDzialania)
-        SETTER(TrybDzialania)
+        void set(TrybDzialania tryb)
+        {
+            if(tryb != this->value)
+            emit owner->netService.connectionStatusChanged(tryb != TrybDzialania::LOCAL, owner->netService.remoteIP);
+            this->value = tryb;
+        }
     } trybDzialania;
 
     PROP(uint32_t, WarstaUslug)
@@ -38,6 +43,8 @@ public:
             assert(value > 1);
             owner->timer.setInterval(value);
             this->value = value;
+            if(owner->trybDzialania.get() != WarstaUslug::TrybDzialania::LOCAL)
+                owner->netService.sendIntervalConfig();
         }
         void fromByteArray(QByteArray data)
         {
@@ -73,6 +80,7 @@ public:
             return owner->timer.isActive();
         }
     } dziala;
+
     PROP(UAR::RodzajSterowania, WarstaUslug)
         void set(const UAR::RodzajSterowania& value)
         {
@@ -84,7 +92,8 @@ public:
                 owner->uar.setPID(&owner->pid);
                 break;
             }
-            owner->netService.sendRegulationTypeConfig();
+            if(owner->trybDzialania.get() != WarstaUslug::TrybDzialania::LOCAL)
+                owner->netService.sendRegulationTypeConfig();
         }
         const UAR::RodzajSterowania get() const
         {
@@ -108,11 +117,52 @@ public:
     WarstaUslug();
 
     void reset();
+    int getBufferFillPercentage();
+    NetService netService;
+
+
+    // Klasy senderów, po to żeby po zmianie paramatru
+    // automatycznie przesyłała się konfiguracja po sieci
+
+
+    AccessNotifier<ARX> arxChange()
+    {
+        return AccessNotifier<ARX>(&arx, [this]()
+        {
+            if(this->trybDzialania.get() != WarstaUslug::TrybDzialania::LOCAL)
+                this->netService.sendArxConfig();
+        });
+    }
+
+    AccessNotifier<RegulatorPID> pidChange()
+    {
+        return AccessNotifier<RegulatorPID>(&pid, [this]()
+        {
+           if(this->trybDzialania.get() != WarstaUslug::TrybDzialania::LOCAL)
+               this->netService.sendPidConfig();
+        });
+    }
+    AccessNotifier<RegulatorOnOff> onOffChange()
+    {
+        return AccessNotifier<RegulatorOnOff>(&onOff, [this]()
+        {
+            if(this->trybDzialania.get() != WarstaUslug::TrybDzialania::LOCAL)
+                this->netService.sendOnOffConfig();
+        });
+    }
+    AccessNotifier<GeneratorWartosci> generatorChange()
+    {
+        return AccessNotifier<GeneratorWartosci>(&generator, [this]()
+        {
+            if(this->trybDzialania.get() != WarstaUslug::TrybDzialania::LOCAL)
+                this->netService.sendGenConfig();
+        });
+    }
+
     ARX arx;
     RegulatorPID pid;
     RegulatorOnOff onOff;
     GeneratorWartosci generator;
-    NetService netService;
 
 public slots:
     void wczytajZPliku();

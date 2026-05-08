@@ -9,20 +9,20 @@
 #include <QTcpServer>
 #include <QTime>
 
-ConnectionWindow::ConnectionWindow(NetService *net, QWidget *parent)
+ConnectionWindow::ConnectionWindow(WarstaUslug *uslugi_i, QWidget *parent)
     : QDialog(parent), ui(new Ui::ConnectionWindow)
-    , service(net)
+    , uslugi{uslugi_i}
 {
     ui->setupUi(this);
     setWindowTitle("Połączenie sieciowe");
     setWindowFlags(windowFlags() | Qt::WindowMinimizeButtonHint);
 
-    connect(service, &NetService::logAppend, this, &ConnectionWindow::log);
-    connect(service, &NetService::connectionStatusChanged, this, &ConnectionWindow::updateStatus);
-    connect(service, &NetService::deviceFound, this, &ConnectionWindow::onDeviceFound);
-    connect(service, &NetService::authQuestionForUser, this, &ConnectionWindow::onAuthRequired);
-    connect(service, &NetService::authErrorReceived, this, &ConnectionWindow::onAuthError);
-    connect(service, &NetService::authCodeEntryRequired, this, &ConnectionWindow::onCodeEntryRequired);
+    connect(&uslugi->netService, &NetService::logAppend, this, &ConnectionWindow::log);
+    connect(&uslugi->netService, &NetService::connectionStatusChanged, this, &ConnectionWindow::updateStatus);
+    connect(&uslugi->netService, &NetService::deviceFound, this, &ConnectionWindow::onDeviceFound);
+    connect(&uslugi->netService, &NetService::authQuestionForUser, this, &ConnectionWindow::onAuthRequired);
+    connect(&uslugi->netService, &NetService::authErrorReceived, this, &ConnectionWindow::onAuthError);
+    connect(&uslugi->netService, &NetService::authCodeEntryRequired, this, &ConnectionWindow::onCodeEntryRequired);
 
     connect(ui->editIP, &QLineEdit::editingFinished, this, &ConnectionWindow::setComboIPnewAddress);
     connect(ui->editIP2, &QLineEdit::editingFinished, this, &ConnectionWindow::setComboIPnewAddress);
@@ -74,7 +74,7 @@ void ConnectionWindow::closeEvent(QCloseEvent *event)
 
     if (res == QMessageBox::Yes)
     {
-        service->disconnect();
+        uslugi->netService.disconnect();
         event->accept();
     } else event->ignore();
 }
@@ -143,7 +143,7 @@ void ConnectionWindow::decomposeIPAddres()
 void ConnectionWindow::on_btnSearch_clicked()
 {
     log("Skanowanie sieci...");
-    service->searchDevices();
+    uslugi->netService.searchDevices();
 }
 
 void ConnectionWindow::onDeviceFound(QString ip)
@@ -162,7 +162,7 @@ void ConnectionWindow::on_btnConnect_clicked()
         ip = composeIPAddres();
 
     log("Próba połączenia z " + ip + "...");
-    service->connectAsClient(ip, ui->spinPort->value());
+    uslugi->netService.connectAsClient(ip, ui->spinPort->value());
     ui->btnSend->setEnabled(true);
 }
 
@@ -174,9 +174,7 @@ void ConnectionWindow::on_btnDisconnect_clicked()
     if (res == QMessageBox::Yes)
     {
         log("Zażądano rozłączenia z partnerem.");
-        service->disconnect();                         // Zlecenie zatrzymania usług sieciowych
-        updateStatus(false, "");
-        ui->btnSend->setEnabled(false);
+        uslugi->netService.disconnect();                         // Zlecenie zatrzymania usług sieciowych
     }
 }
 
@@ -184,9 +182,7 @@ void ConnectionWindow::on_btnStart_clicked()
 {
 
     log("Próba uruchomienia serwera...");
-    service->startAsServer(ui->spinPort->value());
-    ui->btnSend->setEnabled(true);
-
+    uslugi->netService.startAsServer(ui->spinPort->value());
 }
 
 void ConnectionWindow::on_btnStop_clicked()
@@ -196,12 +192,8 @@ void ConnectionWindow::on_btnStop_clicked()
     if (res == QMessageBox::Yes)
     {
         log("Wyłączanie serwera...");
-        service->disconnect();                         // Zlecenie zatrzymania usług sieciowych
-        updateStatus(false, "");
-        ui->btnSend->setEnabled(false);
+        uslugi->netService.disconnect();                         // Zlecenie zatrzymania usług sieciowych
     }
-
-    ui->radioLokalny->setChecked(true);
 }
 
 void ConnectionWindow::on_comboIP_currentTextChanged(const QString &arg1)
@@ -216,7 +208,7 @@ void ConnectionWindow::on_btnClear_clicked()
 
 void ConnectionWindow::on_btnSend_clicked()
 {
-    service->sendText(ui->editMsg->text());
+    uslugi->netService.sendText(ui->editMsg->text());
     log("Wysłano: " + ui->editMsg->text());
     ui->editMsg->clear();
     ui->editMsg->setFocus();
@@ -224,6 +216,7 @@ void ConnectionWindow::on_btnSend_clicked()
 
 void ConnectionWindow::updateStatus(bool connected, QString ip)
 {
+    ui->btnSend->setEnabled(connected);
     if(connected)
     {
         ui->labelConnStatus->setText("● Połączono");
@@ -235,7 +228,20 @@ void ConnectionWindow::updateStatus(bool connected, QString ip)
         ui->labelConnStatus->setText("● Rozłączono");
         ui->labelConnStatus->setStyleSheet("color: red;");
         ui->labelRemoteIP->setText("IP zdalne: -");
-        ui->radioLokalny->setChecked(true);
+    }
+
+    qDebug() << (int)uslugi->trybDzialania.get();
+    switch (uslugi->trybDzialania.get())
+    {
+    case WarstaUslug::TrybDzialania::LOCAL:
+        ui->radioLokalny->click();
+        break;
+    case WarstaUslug::TrybDzialania::NET_REG:
+        ui->radioServer->click();
+        break;
+    case WarstaUslug::TrybDzialania::NET_ARX:
+        ui->radioClient->click();
+        break;
     }
 }
 
@@ -253,10 +259,10 @@ void ConnectionWindow::onAuthRequired()
     {
         int code = QRandomGenerator::global()->bounded(1000, 9999);
         log("Wygenerowano kod dla partnera: " + QString::number(code));
-        service->chooseAuthWithCode(code); // Tryb z kodem
+        uslugi->netService.chooseAuthWithCode(code); // Tryb z kodem
     }
-    else if (msgBox.clickedButton() == btnNoCode) { service->chooseAuthWithoutCode(); }
-    else { service->chooseAuthReject(); }
+    else if (msgBox.clickedButton() == btnNoCode) { uslugi->netService.chooseAuthWithoutCode(); }
+    else { uslugi->netService.chooseAuthReject(); }
 }
 
 void ConnectionWindow::onAuthError(QString errMsg)
@@ -274,7 +280,7 @@ void ConnectionWindow::onCodeEntryRequired()
 
     if (ok && !text.isEmpty())
     {
-        service->authCodeVerification(text.toInt());
+        uslugi->netService.authCodeVerification(text.toInt());
         log("Wysłano kod do weryfikacji...");
     }
     else
@@ -315,3 +321,7 @@ void ConnectionWindow::on_radioClient_clicked()
     ui->btnDisconnect->setEnabled(true);
 }
 
+void ConnectionWindow::setBufferFill(int percentage)
+{
+    ui->progressBarOpoznienie->setValue(percentage);
+}

@@ -16,7 +16,7 @@ GeneratorWartosci::GeneratorWartosci(double amplituda, double skladowaStala, uin
 double GeneratorWartosci::generuj(uint32_t przeskok)
 {
     double wartosc = 0.0;
-    if(krok > okres.get()) krok = okres.get() % krok;
+    if(krok > okres.get()) krok = krok % okres.get(); // IMA STUPID
     switch (typSygnalu.get()) {
     case TypSygnalu::KWADRAT:
         wartosc += ((miejsceWCyklu() < wypelnienie.get() ? 1.0 : 0.0));

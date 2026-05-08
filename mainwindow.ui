@@ -73,7 +73,7 @@
           </widget>
          </item>
          <item row="3" column="0" colspan="2">
-          <widget class="QPushButton" name="resetPID">
+          <widget class="QPushButton" name="pushButton_resetPID">
            <property name="font">
             <font>
              <pointsize>9</pointsize>
@@ -124,7 +124,7 @@
           </widget>
          </item>
          <item row="1" column="0">
-          <widget class="QDoubleSpinBox" name="stalaCalkowa">
+          <widget class="QDoubleSpinBox" name="spinBox_stalaCalkowa">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
              <horstretch>0</horstretch>
@@ -143,7 +143,7 @@
           </widget>
          </item>
          <item row="2" column="0">
-          <widget class="QDoubleSpinBox" name="stalaRozniczkowa">
+          <widget class="QDoubleSpinBox" name="spinBox_stalaRozniczkowa">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
              <horstretch>0</horstretch>
@@ -183,7 +183,7 @@
          <item row="4" column="0" colspan="2">
           <layout class="QHBoxLayout" name="horizontalLayout_6">
            <item>
-            <widget class="QRadioButton" name="pidWewn">
+            <widget class="QRadioButton" name="radioButton_pidWewn">
              <property name="font">
               <font>
                <pointsize>9</pointsize>
@@ -196,7 +196,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QRadioButton" name="pidZewn">
+            <widget class="QRadioButton" name="radioButton_pidZewn">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                <horstretch>0</horstretch>
@@ -232,7 +232,7 @@
         </property>
         <layout class="QGridLayout" name="gridLayout_4">
          <item row="0" column="0">
-          <widget class="QDoubleSpinBox" name="szerokoscHisterezy">
+          <widget class="QDoubleSpinBox" name="spinBox_szerokoscHisterezy">
            <property name="sizePolicy">
             <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
              <horstretch>0</horstretch>
@@ -270,7 +270,7 @@
           </widget>
          </item>
          <item row="1" column="0">
-          <widget class="QDoubleSpinBox" name="wartoscSterowaniaON">
+          <widget class="QDoubleSpinBox" name="spinBox_wartoscSterowaniaON">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
              <horstretch>0</horstretch>
@@ -363,31 +363,6 @@
          <string>Wykresy</string>
         </property>
         <layout class="QGridLayout" name="gridLayout">
-         <item row="0" column="0">
-          <widget class="QSpinBox" name="rozmiarWykresu">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-             <horstretch>40</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="font">
-            <font>
-             <pointsize>9</pointsize>
-             <bold>false</bold>
-            </font>
-           </property>
-           <property name="minimum">
-            <number>5</number>
-           </property>
-           <property name="maximum">
-            <number>50</number>
-           </property>
-           <property name="value">
-            <number>10</number>
-           </property>
-          </widget>
-         </item>
          <item row="0" column="1">
           <widget class="QLabel" name="label_12">
            <property name="sizePolicy">
@@ -403,32 +378,7 @@
             </font>
            </property>
            <property name="text">
-            <string>Wielkość wykresu</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="0">
-          <widget class="QSpinBox" name="interwal">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="font">
-            <font>
-             <pointsize>9</pointsize>
-             <bold>false</bold>
-            </font>
-           </property>
-           <property name="minimum">
-            <number>5</number>
-           </property>
-           <property name="maximum">
-            <number>1000</number>
-           </property>
-           <property name="value">
-            <number>200</number>
+            <string>Pamięć wykresów</string>
            </property>
           </widget>
          </item>
@@ -451,6 +401,44 @@
            </property>
           </widget>
          </item>
+         <item row="0" column="0">
+          <widget class="QDoubleSpinBox" name="spinBox_rozmiarWykresu">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+             <horstretch>40</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="font">
+            <font>
+             <pointsize>9</pointsize>
+             <bold>false</bold>
+            </font>
+           </property>
+           <property name="suffix">
+            <string> s</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QSpinBox" name="spinBox_interwal">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="font">
+            <font>
+             <pointsize>9</pointsize>
+             <bold>false</bold>
+            </font>
+           </property>
+           <property name="suffix">
+            <string> ms</string>
+           </property>
+          </widget>
+         </item>
         </layout>
        </widget>
       </item>
@@ -466,27 +454,8 @@
          <string>Generator Wartosci Zadanej</string>
         </property>
         <layout class="QGridLayout" name="gridLayout_2">
-         <item row="3" column="1">
-          <widget class="QLabel" name="label_14">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="font">
-            <font>
-             <pointsize>9</pointsize>
-             <bold>false</bold>
-            </font>
-           </property>
-           <property name="text">
-            <string>wypełnienie</string>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="0">
-          <widget class="QSpinBox" name="skladowaStala">
+         <item row="1" column="0">
+          <widget class="QDoubleSpinBox" name="spinBox_amplituda">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
              <horstretch>0</horstretch>
@@ -501,8 +470,79 @@
            </property>
           </widget>
          </item>
+         <item row="5" column="0" colspan="2">
+          <layout class="QHBoxLayout" name="horizontalLayout_3">
+           <property name="sizeConstraint">
+            <enum>QLayout::SetNoConstraint</enum>
+           </property>
+           <item>
+            <widget class="QRadioButton" name="radioButton_prostokatny">
+             <property name="font">
+              <font>
+               <pointsize>9</pointsize>
+               <bold>false</bold>
+              </font>
+             </property>
+             <property name="text">
+              <string>Prostokątny</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QRadioButton" name="radioButton_sinusoidalny">
+             <property name="font">
+              <font>
+               <pointsize>9</pointsize>
+               <bold>false</bold>
+              </font>
+             </property>
+             <property name="text">
+              <string>Sinusoidalny</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item row="1" column="1">
+          <widget class="QLabel" name="label_6">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="font">
+            <font>
+             <pointsize>9</pointsize>
+             <bold>false</bold>
+            </font>
+           </property>
+           <property name="text">
+            <string>amplituda</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QLabel" name="label_5">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="font">
+            <font>
+             <pointsize>9</pointsize>
+             <bold>false</bold>
+            </font>
+           </property>
+           <property name="text">
+            <string>okres sygnału</string>
+           </property>
+          </widget>
+         </item>
          <item row="3" column="0">
-          <widget class="QDoubleSpinBox" name="wypelnienie">
+          <widget class="QDoubleSpinBox" name="spinBox_wypelnienie">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
              <horstretch>0</horstretch>
@@ -548,27 +588,8 @@
            </property>
           </widget>
          </item>
-         <item row="1" column="1">
-          <widget class="QLabel" name="label_6">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="font">
-            <font>
-             <pointsize>9</pointsize>
-             <bold>false</bold>
-            </font>
-           </property>
-           <property name="text">
-            <string>amplituda</string>
-           </property>
-          </widget>
-         </item>
          <item row="0" column="0">
-          <widget class="QSpinBox" name="czasTR">
+          <widget class="QDoubleSpinBox" name="spinBox_okres">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
              <horstretch>0</horstretch>
@@ -581,32 +602,13 @@
              <bold>false</bold>
             </font>
            </property>
-           <property name="maximum">
-            <number>1000</number>
+           <property name="suffix">
+            <string> s</string>
            </property>
           </widget>
          </item>
-         <item row="0" column="1">
-          <widget class="QLabel" name="label_5">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="font">
-            <font>
-             <pointsize>9</pointsize>
-             <bold>false</bold>
-            </font>
-           </property>
-           <property name="text">
-            <string>okres sygnału</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="0">
-          <widget class="QSpinBox" name="amplituda">
+         <item row="2" column="0">
+          <widget class="QDoubleSpinBox" name="spinBox_skladowaStala">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
              <horstretch>0</horstretch>
@@ -621,57 +623,62 @@
            </property>
           </widget>
          </item>
-         <item row="4" column="0" colspan="2">
-          <layout class="QHBoxLayout" name="horizontalLayout_3">
-           <property name="sizeConstraint">
-            <enum>QLayout::SetNoConstraint</enum>
+         <item row="4" column="0">
+          <widget class="QSlider" name="horizontalSlider_wypelnienie">
+           <property name="maximum">
+            <number>100</number>
            </property>
-           <item>
-            <widget class="QRadioButton" name="radioButton_prostokatny">
-             <property name="font">
-              <font>
-               <pointsize>9</pointsize>
-               <bold>false</bold>
-              </font>
-             </property>
-             <property name="text">
-              <string>Prostokątny</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QRadioButton" name="radioButton_sinusoidalny">
-             <property name="font">
-              <font>
-               <pointsize>9</pointsize>
-               <bold>false</bold>
-              </font>
-             </property>
-             <property name="text">
-              <string>Sinusoidalny</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
+           <property name="pageStep">
+            <number>25</number>
+           </property>
+           <property name="sliderPosition">
+            <number>50</number>
+           </property>
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="1" rowspan="2">
+          <widget class="QLabel" name="label_14">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="font">
+            <font>
+             <pointsize>9</pointsize>
+             <bold>false</bold>
+            </font>
+           </property>
+           <property name="text">
+            <string>wypełnienie</string>
+           </property>
+          </widget>
          </item>
         </layout>
        </widget>
       </item>
       <item>
        <widget class="QGroupBox" name="groupBox_filtr">
+        <property name="font">
+         <font>
+          <bold>true</bold>
+         </font>
+        </property>
         <property name="title">
-         <string>Filtr Przeciwnasyceniowy</string>
+         <string>Filtrowanie sterowania</string>
         </property>
         <layout class="QGridLayout" name="gridLayout_3">
-         <item row="1" column="0">
-          <widget class="QLabel" name="label_17">
-           <property name="text">
-            <string>Do:</string>
-           </property>
-          </widget>
-         </item>
          <item row="2" column="1">
-          <widget class="QDoubleSpinBox" name="nasycenieMin">
+          <widget class="QDoubleSpinBox" name="spinBox_sterowanieMin">
+           <property name="font">
+            <font>
+             <bold>false</bold>
+            </font>
+           </property>
            <property name="minimum">
             <double>-99.989999999999995</double>
            </property>
@@ -685,15 +692,13 @@
          </item>
          <item row="2" column="0">
           <widget class="QLabel" name="label_16">
+           <property name="font">
+            <font>
+             <bold>false</bold>
+            </font>
+           </property>
            <property name="text">
             <string>Od:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="1">
-          <widget class="QDoubleSpinBox" name="nasycenieMax">
-           <property name="singleStep">
-            <double>0.100000000000000</double>
            </property>
           </widget>
          </item>
@@ -701,6 +706,11 @@
           <layout class="QHBoxLayout" name="horizontalLayout_4">
            <item>
             <widget class="QCheckBox" name="checkBox_nasycenie">
+             <property name="font">
+              <font>
+               <bold>false</bold>
+              </font>
+             </property>
              <property name="text">
               <string>Nasycenie</string>
              </property>
@@ -708,12 +718,41 @@
            </item>
            <item>
             <widget class="QCheckBox" name="checkBox_ograniczenie">
+             <property name="font">
+              <font>
+               <bold>false</bold>
+              </font>
+             </property>
              <property name="text">
               <string>Ograniczenie</string>
              </property>
             </widget>
            </item>
           </layout>
+         </item>
+         <item row="3" column="1">
+          <widget class="QDoubleSpinBox" name="spinBox_sterowanieMax">
+           <property name="font">
+            <font>
+             <bold>false</bold>
+            </font>
+           </property>
+           <property name="singleStep">
+            <double>0.100000000000000</double>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="0">
+          <widget class="QLabel" name="label_17">
+           <property name="font">
+            <font>
+             <bold>false</bold>
+            </font>
+           </property>
+           <property name="text">
+            <string>Do:</string>
+           </property>
+          </widget>
          </item>
         </layout>
        </widget>
@@ -733,6 +772,12 @@
       </item>
       <item>
        <widget class="QPushButton" name="pushButton_arx">
+        <property name="font">
+         <font>
+          <pointsize>12</pointsize>
+          <bold>false</bold>
+         </font>
+        </property>
         <property name="text">
          <string>ARX</string>
         </property>
@@ -740,8 +785,23 @@
       </item>
       <item>
        <widget class="QPushButton" name="pushButton_startStop">
+        <property name="font">
+         <font>
+          <pointsize>12</pointsize>
+          <bold>false</bold>
+         </font>
+        </property>
         <property name="text">
-         <string>Start/Stop</string>
+         <string>Start</string>
+        </property>
+        <property name="autoDefault">
+         <bool>false</bool>
+        </property>
+        <property name="default">
+         <bool>false</bool>
+        </property>
+        <property name="flat">
+         <bool>false</bool>
         </property>
        </widget>
       </item>

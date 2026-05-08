@@ -2,7 +2,9 @@
 #define UTILS_H
 
 #include <cstdint>
+#include <functional>
 #include <utility>
+
 class MinMaxClamp
 {
     double min;
@@ -66,6 +68,41 @@ public:
     PropertyWithAccess<T> operator=(PropertyWithAccess<T>&) = delete;
     PropertyWithAccess<T> operator=(PropertyWithAccess<T>&&) = delete;
 };
+
+template<typename T>
+struct AccessNotifier
+{
+    T* instancja;
+    std::function<void()> callback_after;
+    AccessNotifier<T>(T* instance, std::function<void()> cal_after)
+        :   instancja{instance}
+        ,   callback_after{cal_after}
+    {}
+    ~AccessNotifier<T>()
+    {
+        if(callback_after)
+            callback_after();
+    }
+};
+
+
+// template<typename T>
+// class AccessNotifier
+// {
+// protected:
+//     T* instance;
+//     std::function<void()> callback;
+// public:
+//     operator T*()
+//     {
+//         callback();
+//         return value;
+//     }
+//     explicit AccessNotifier<T>(T* value, std::function<void()> callback)
+//         :value{value}
+//         ,callback{callback}
+//     {}
+// };
 
 #define PROPERTY(type) struct : public Property<type>\
 {\
