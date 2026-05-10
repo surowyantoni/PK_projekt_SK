@@ -63,10 +63,12 @@ void ARX::aktualizacjaBuforowPoZmianieOpoznienia()
     while(k.get() + wspolczynniki.value.size() < U.size())
     {
         U.pop_back();
+        Y.pop_back();
     }
-    while(k.get() + wspolczynniki.value.size() > U.size())
+    while(k.get() + wspolczynniki.value.size() >= U.size())
     {
         U.push_back(0.0);
+        Y.push_back(0.0);
     }
 }
 
