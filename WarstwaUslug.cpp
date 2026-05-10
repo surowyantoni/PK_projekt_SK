@@ -60,7 +60,9 @@ void WarstaUslug::symuluj()
         });
         break;
     case TrybDzialania::NET_ARX:
-        throw "WATAFQ";
+        timer.stop();
+        czas -= interwal.get();
+        // throw "WATAFQ"; // Nacisnales przycisk zmiany trybu na ARX, przy włączonej symulacji xD
         break;
     }
 }

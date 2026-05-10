@@ -16,20 +16,20 @@ class ConnectionWindow : public QDialog
 public:
     explicit ConnectionWindow(WarstaUslug& uslugi, QWidget *parent = nullptr);
     ~ConnectionWindow();
-    void setBufferFill(int percentage);
+
 protected:
     void changeEvent(QEvent *event) override;
     void closeEvent(QCloseEvent *event) override;
 
-private slots:
-
-    void log(QString text);                         //Logowanie
-    void updateStatus(bool connected, QString ip);  //UI status
-    void onAuthRequired();                          //Wyrzucenie okna z pytaniem o sposób połączenia
-    void onAuthError(QString errMsg);               //Reakcja na zły kod
-    void onCodeEntryRequired();                     //Prośba o podanie kodu
-    void onDeviceFound(QString ip);                 //Wpisanie znalezionychdo comboBox
-    void updateUI();
+private slots:    
+    void updateUI(); // Aktywowane przez warstwę usług, ustawia aktywność kontorlek na skutek zmiany ustawień trybu pracy
+    void log(QString text);
+    void onConnected();  //UI status
+    void onDisconnected();  //UI status
+    void onAuthChoiceRequired();//Wyrzucenie okna z pytaniem o sposób połączenia
+    void onAuthError();//Reakcja na zły kod
+    void onCodeEntry();      //Prośba o podanie kodu
+    void onDeviceFound(QString ip);  //Wpisanie znalezionychdo comboBox
     void on_radioLokalny_clicked();
 
     void on_radioServer_clicked();
@@ -48,9 +48,10 @@ private slots:
 
 private:
     Ui::ConnectionWindow *ui;
-    QString localIP;
     WarstaUslug& uslugi;
+    QTimer statsTimer;
 
+    void setBufferFill(int percentage);
     QString composeIPAddres();  //Złączenie IP w 1 ciąg
     void decomposeIPAddres(QString ip);   //Rozbicie IP na 4 pola (".")
 };

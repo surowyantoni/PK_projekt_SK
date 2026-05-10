@@ -165,6 +165,7 @@ void MainWindow::externalUIUpdate()
     ui->groupBox_generator->setEnabled(isRegulator);
     ui->groupBox_filtr->setEnabled(isRegulator);
     ui->pushButton_startStop->setEnabled(isConnected);
+    ui->pushButton_startStop->setText(uslugi.dziala.get() ? "STOP" : "START");
     ui->pushButton_reset->setEnabled(isConnected);
 }
 
@@ -192,8 +193,7 @@ void MainWindow::chartsUpdate(UAR::Tick tick, WarstaUslug::Czas czas)
             pamiec_wykresow.deleteFirstValue();
         pamiec_wykresow.deleteFirstValue();
     }
-    connection_window.setBufferFill(uslugi.getBufferFillPercentage());
-
+    // connection_window.setBufferFill(uslugi.getBufferFillPercentage());
     ui->plot->update();
 }
 

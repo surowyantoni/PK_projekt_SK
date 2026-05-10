@@ -4,61 +4,75 @@
 #include <QNetworkDatagram>
 #include <QDataStream>
 #include "DEFINITIONS.hpp"
+#include "qnetworkinterface.h"
 #include "qtcpsocket.h"
 
 NetService::NetService(WarstaUslug *parent)
-    : udp{new QUdpSocket(this)}
+    : udp{QUdpSocket(this)}
     , uslugi{parent}
 {
-    udp->bind(CONSTS::NET::DISCOVERY_PORT, QUdpSocket::ShareAddress);
-    connect(udp, &QUdpSocket::readyRead, this, &NetService::processDiscoveryUdp);
+    udp.bind(CONSTS::NET::DISCOVERY_PORT, QUdpSocket::ShareAddress);
+    QObject::connect(&udp, &QUdpSocket::readyRead, this, &NetService::processDiscoveryUdp);
+
+    for (const QHostAddress &address : QNetworkInterface::allAddresses())
+        if (address.protocol() == QAbstractSocket::IPv4Protocol && address != QHostAddress(QHostAddress::LocalHost))
+            localIP = address.toString();
 }
 
 void NetService::searchDevices()
 {
-    udp->writeDatagram("UAR_QUERY", QHostAddress::Broadcast, CONSTS::NET::DISCOVERY_PORT);
+    udp.writeDatagram("UAR_QUERY", QHostAddress::Broadcast, CONSTS::NET::DISCOVERY_PORT);
     emit logAppend("Wysłano zapytanie DISCOVERY...");
 }
 
 void NetService::chooseAuthWithCode(int code)
 {
+    assert(isServer());
     currentAuthCode = code;
     unsuccessfullAuthAttempts = 0;
-    authenticated = false;
     sendDataPackage(AUTH_NEEDED);
+    authenticated = false;
     emit logAppend("Wysłano prośbę o wpisanie kodu do pratnera.");
 }
 
 void NetService::chooseAuthWithoutCode()
 {
+    assert(isServer());
     sendDataPackage(AUTH_SUCCESS);
     authenticated = true;
+    unsuccessfullAuthAttempts = 0;
+    emit connected();
     emit logAppend("Połączono w trybie bez autoryzacji.");
 }
 void  NetService::chooseAuthReject()
 {
+    assert(isServer());
     sendDataPackage(DISCONNECT_NOTIFY);
-    emit logAppend("Odrzucono połączenie z klientem");
+    emit disconnected();
+    emit logAppend("Odrzucono połączenie z klientem.");
 }
 void NetService::authCodeVerification(int code)
 {
+    assert(isClient());
     sendDataPackage(AUTH_CODE, QByteArray::number(code));
+    emit logAppend("Przesłano kod do weryfikacji.");
 }
 
 void NetService::startAsServer(int port)
 {
-    startLocal();
+    goLocal();
     server = new QTcpServer(this);
-
     connect(server, &QTcpServer::newConnection, this, &NetService::handleNewClient);
     if (server->listen(QHostAddress::Any, port))
         emit logAppend("Serwer nasłuchuje na porcie " + QString::number(port));
+    else
+        emit logAppend("ERROR: Port " + QString::number(port) + " wydaje się być zajęty!");
     emit uslugi->updateUI();
 }
 
 void NetService::connectAsClient(QString ip, int port)
 {
-    startLocal();
+    goLocal();
     socket = new QTcpSocket(this);
 
     connect(socket, &QTcpSocket::connected, this, [this]()
@@ -69,10 +83,15 @@ void NetService::connectAsClient(QString ip, int port)
             {
                 processDataPackage(socket->readAll());
             });
-    connect(socket, &QTcpSocket::disconnected, this, &NetService::startLocal);
+    connect(socket, &QTcpSocket::disconnected, this, [this]()
+            {
+                emit disconnected();
+                unsuccessfullAuthAttempts = 0;
+                authenticated = false;
+                goLocal();
+            });
     socket->connectToHost(ip, port);
     remoteIP = ip;
-
     emit uslugi->updateUI();
 }
 
@@ -83,7 +102,10 @@ void NetService::disconnect()
         sendDataPackage(DISCONNECT_NOTIFY);
         emit logAppend("Połączenie zerwane!");
     }
-    startLocal();
+    unsuccessfullAuthAttempts = 0;
+    authenticated = false;
+    if(socket != nullptr)
+        socket->disconnectFromHost();
 }
 void NetService::sendText(QString message)
 {
@@ -143,47 +165,51 @@ void NetService::handleNewClient()
                 {
                     processDataPackage(socket->readAll());
                 });
-        connect(socket, &QTcpSocket::disconnected, this, &NetService::startLocal);
+        connect(socket, &QTcpSocket::disconnected, this, [this]()
+                {
+                    emit disconnected();
+                    unsuccessfullAuthAttempts = 0;
+                    authenticated = false;
+                    goLocal();
+                });
         remoteIP = QHostAddress(socket->peerAddress().toIPv4Address()).toString();
         emit logAppend("Wykryto połączenie przychodzące z IP: " + remoteIP);
     }
 }
 
-void NetService::startLocal()
+void NetService::goLocal()
 {
     if(isServer())
     {
         server->close();
         server->deleteLater();
     }
-    if(isAuthenticated())
+    if(socket != nullptr)
     {
         socket->disconnectFromHost();
         socket->deleteLater();
     }
     socket = nullptr;
     server = nullptr;
-
-    unsuccessfullAuthAttempts = 0;
-    authenticated = false;
-    emit connectionStatusChanged(true, remoteIP);
-    emit uslugi->updateUI();
 }
 
 
 
 void NetService::processDiscoveryUdp()
 {
-    while (udp->hasPendingDatagrams())
+    while (udp.hasPendingDatagrams())
     {
-        QNetworkDatagram dg = udp->receiveDatagram();
+        QNetworkDatagram dg = udp.receiveDatagram();
         QHostAddress sender = dg.senderAddress();
 
         sender = QHostAddress(sender.toIPv4Address());
 
         if (dg.data() == "UAR_QUERY")
-            udp->writeDatagram("UAR_RESP", sender, CONSTS::NET::DISCOVERY_PORT);
-        else if (dg.data() == "UAR_RESP")
+        {
+            udp.writeDatagram("UAR_RESP", sender, CONSTS::NET::DISCOVERY_PORT);
+            emit deviceFound(sender.toString());
+        }
+        if (dg.data() == "UAR_RESP")
             emit deviceFound(sender.toString());
     }
 }
@@ -199,8 +225,8 @@ void NetService::processDataPackage(QByteArray data)
     switch (type)
     {
         case CONNECTION_REQUEST:
-            if(!isServer()) return;
-            emit authQuestionForUser();
+            if(isClient()) return;
+            emit authChoiceQuestion();
             break;
 
         case AUTH_NEEDED:
@@ -210,39 +236,37 @@ void NetService::processDataPackage(QByteArray data)
 
         case AUTH_FAILED:
             if(isServer()) return;
-            emit authCodeEntryRequired();
-            emit authErrorReceived("Podałeś błędny kod");
+            emit authErrorReceived();
             emit logAppend("Odrzucono próbę połączenia. Prawdopodobnie błędny kod.");
         break;
 
         case AUTH_CODE:
-            if(!isServer()) return;
+            if(isClient()) return;
             if(dane_pakietu.toInt() == currentAuthCode)
             {
                 sendDataPackage(AUTH_SUCCESS);
                 authenticated = true;
-                emit connectionStatusChanged(true, remoteIP);
+                emit connected();
                 emit logAppend("Połączono klienta w trybie autoryzacji kodem.");
             }
             else
             {
                 unsuccessfullAuthAttempts++;
+                sendDataPackage(AUTH_FAILED);
                 authenticated = false;
                 emit logAppend("Nieudana próba połączenia z IP" + remoteIP);
-                sendDataPackage(AUTH_FAILED);
             }
             if(unsuccessfullAuthAttempts >= CONSTS::NET::MAX_AUTH_ATTEMPTS)
             {
-                emit logAppend("Otzymano 3 takie nieudane próby, zamykam połączenie z " + remoteIP + " i czekam na nowego klienta.");
-                //Restartuję serwer, bo to najłatwiejsze
-                startAsServer(server->serverPort());
+                emit logAppend("Otzymano 3 nieudane próby połączenia z IP " + remoteIP + " zamykam połączenie i czekam na nowego klienta.");
+                chooseAuthReject();
             }
         break;
 
         case AUTH_SUCCESS:
             if(isServer()) return;
             authenticated = true;
-            emit connectionStatusChanged(true, remoteIP);
+            emit connected();
             emit logAppend("Połączenie udane! Tryb sieciowy aktywny.");
         break;
 
@@ -252,7 +276,8 @@ void NetService::processDataPackage(QByteArray data)
 
         case DISCONNECT_NOTIFY:
             emit logAppend("Partner zakończył połączenie.");
-            startLocal(); // Metoda czyszcząca bez wysyłania powiadomienia (uniknięcie pętli)
+            emit disconnected();
+            goLocal(); // Metoda czyszcząca bez wysyłania powiadomienia (uniknięcie pętli)
             break;
 
         case CONFIG_PID:
@@ -305,13 +330,11 @@ void NetService::processDataPackage(QByteArray data)
 
         case SIM_START:
             disconnectIfNotAuthenticated();
-            uslugi->dziala.set(true);
-            emit uslugi->updateUI();
+            uslugi->dziala.setNoSend(true);
             break;
         case SIM_STOP:
             disconnectIfNotAuthenticated();
-            uslugi->dziala.set(false);
-            emit uslugi->updateUI();
+            uslugi->dziala.setNoSend(false);
             break;
         case SIM_RESTART:
             disconnectIfNotAuthenticated();
@@ -324,10 +347,14 @@ void NetService::processDataPackage(QByteArray data)
 
 void NetService::sendDataPackage(quint8 type, const QByteArray &data)
 {
+    if(socket == nullptr)
+    {
+        emit disconnected();
+        return;
+    }
     QByteArray package;
     QDataStream out(&package, QIODevice::WriteOnly);
     out << type << data;
-    assert(isAuthenticated());
     if(socket->isOpen())
     {
         socket->write(package);
@@ -335,7 +362,7 @@ void NetService::sendDataPackage(quint8 type, const QByteArray &data)
         transmitedPacketCounter++;
     }
     else
-        qDebug() << "[ERR] Połączenie nie jest otwarte";
+        emit logAppend("ERROR: Połączenie nie jest otwarte, a próbowano wysłać pakiet");
 }
 void NetService::disconnectIfNotAuthenticated()
 {
@@ -348,6 +375,19 @@ void NetService::disconnectIfNotAuthenticated()
 bool NetService::isServer()
 {
     return server != nullptr;
+}
+bool NetService::isClient()
+{
+    return (socket != nullptr && server == nullptr);
+}
+
+uint32_t NetService::getTansmited()
+{
+    return transmitedPacketCounter;
+}
+uint32_t NetService::getReceived()
+{
+    return receivedPacketCounter;
 }
 bool NetService::isAuthenticated()
 {

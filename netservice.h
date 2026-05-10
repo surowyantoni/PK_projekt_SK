@@ -14,18 +14,25 @@ class NetService : public QObject
 public:
     explicit NetService(WarstaUslug* parent = nullptr);
     QString remoteIP = "";
-    bool isAuthenticated();
+    QString localIP = "";
+
     bool isServer();
+    bool isClient();
+    bool isAuthenticated();
+
+    uint32_t getTansmited();
+    uint32_t getReceived();
 signals:
-    void connectionStatusChanged(bool connected, QString remoteIP = "");
     void logAppend(QString log);
     void deviceFound(QString ip);
-    void disconnected();
 
-    void authQuestionForUser();
-    void authErrorReceived(QString error);
+    void authChoiceQuestion();
+
     void authCodeEntryRequired();
+    void authErrorReceived();
+    void connected();
 
+    void disconnected();
     void simmulationRestart();
     // void simmulationStart();
     // void simmulationStop();
@@ -33,25 +40,19 @@ signals:
     // void sampleReceivedFromServer(SimSampleFromRegulator sample);
 
 
-
-
 public slots:
     void searchDevices();
     void chooseAuthWithCode(int code);
     void chooseAuthWithoutCode();
     void chooseAuthReject();
+
     void authCodeVerification(int code);
 
     void startAsServer(int port);
     void connectAsClient(QString ip, int port);
     void disconnect();
+    void goLocal();
 
-    // void sendPidConfig(QByteArray pid);
-    // void sendGenConfig(QByteArray gen);
-    // void sendArxConfig(QByteArray arx);
-    // void sendOnOffConfig(QByteArray onoff);
-    // void sendIntervalConfig(QByteArray interval);
-    // void sendRegulationTypeConfig(QByteArray regtype);
 
     void sendText(QString message);
 
@@ -66,26 +67,23 @@ public slots:
     void sendSample(SimSampleFromObject sample);
     void sendSimmulationRestart();
     void sendSimmulationRunning(bool running);
-    void startLocal();
 
 private slots:
     void handleNewClient();
     void processDiscoveryUdp();
     void processDataPackage(QByteArray data);
 
-
 private:
     void disconnectIfNotAuthenticated();
     void sendDataPackage(quint8 type, const QByteArray &data = QByteArray());
-    // Client *client = nullptr;
-    // Server *server = nullptr;
-    QUdpSocket* udp = nullptr;
+
+    QUdpSocket udp;
     QTcpSocket* socket = nullptr;
     QTcpServer* server = nullptr;
     WarstaUslug* uslugi;
 
 
-    int currentAuthCode;
+    int currentAuthCode = 0000;
     int unsuccessfullAuthAttempts = 0;
     bool authenticated = false;
 

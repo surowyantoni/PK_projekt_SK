@@ -41,8 +41,7 @@ ParametryARXWindow::ParametryARXWindow(WarstaUslug& uslugi)
 
 void ParametryARXWindow::closeEvent(QCloseEvent* event)
 {
-    this->closed();
-    this->hide();
+    emit this->hide();
 }
 
 void ParametryARXWindow::updateUI()
@@ -108,7 +107,7 @@ void ParametryARXWindow::on_buttonBox_accepted()
 
     // Usuwamy zerowe współczynniki z końca, bo są niepotrzebne
     size_t to_remove = 0;
-    for (uint16_t idx = vec.size() - 1; idx > 0; --idx)
+    for (size_t idx = vec.size() - 1; idx > 0; --idx)
     {
         if(vec[idx].A == 0.0 && vec[idx].B == 0.0)
             to_remove++;

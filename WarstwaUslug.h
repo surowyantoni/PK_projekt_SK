@@ -62,6 +62,15 @@ public:
     } interwal;
 
     PROP(bool, WarstaUslug)
+        void setNoSend(const bool& value)
+        {
+            if(value)
+                owner->timer.start();
+            else
+                owner->timer.stop();
+
+            emit owner->updateUI();
+        }
         void set(const bool& value)
         {
             if(owner->netService.isAuthenticated())
@@ -70,10 +79,7 @@ public:
                 if(owner->trybDzialania.get() == TrybDzialania::NET_ARX)
                     return;
             }
-            if(value)
-                owner->timer.start();
-            else
-                owner->timer.stop();
+            setNoSend(value);
         }
         const bool get() const
         {

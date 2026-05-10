@@ -12,29 +12,38 @@
 ConnectionWindow::ConnectionWindow(WarstaUslug& uslugi_i, QWidget *parent)
     : QDialog(parent), ui(new Ui::ConnectionWindow)
     , uslugi{uslugi_i}
+    , statsTimer{QTimer()}
 {
     ui->setupUi(this);
+    statsTimer.setInterval(CONSTS::NET::STATS_UPDATE_INTERVAL);
+    QObject::connect(&statsTimer, &QTimer::timeout, this, [this](){
+        ui->labelPacketsReceived->setText("RX: " + QString::number(uslugi.netService.getReceived()));
+        ui->labelPacketsSent->setText("TX: " + QString::number(uslugi.netService.getTansmited()));
+    });
+
+
     setWindowTitle("Połączenie sieciowe");
     setWindowFlags(windowFlags() | Qt::WindowMinimizeButtonHint);
 
     connect(&uslugi.netService, &NetService::logAppend, this, &ConnectionWindow::log);
-    connect(&uslugi.netService, &NetService::connectionStatusChanged, this, &ConnectionWindow::updateStatus);
+    connect(&uslugi.netService, &NetService::connected, this, &ConnectionWindow::onConnected);
+    connect(&uslugi.netService, &NetService::disconnected, this, &ConnectionWindow::onDisconnected);
     connect(&uslugi.netService, &NetService::deviceFound, this, &ConnectionWindow::onDeviceFound);
-    connect(&uslugi.netService, &NetService::authQuestionForUser, this, &ConnectionWindow::onAuthRequired);
+    connect(&uslugi.netService, &NetService::authChoiceQuestion, this, &ConnectionWindow::onAuthChoiceRequired);
     connect(&uslugi.netService, &NetService::authErrorReceived, this, &ConnectionWindow::onAuthError);
-    connect(&uslugi.netService, &NetService::authCodeEntryRequired, this, &ConnectionWindow::onCodeEntryRequired);
+    connect(&uslugi.netService, &NetService::authCodeEntryRequired, this, &ConnectionWindow::onCodeEntry);
     connect(&uslugi, &WarstaUslug::updateUI, this, &ConnectionWindow::updateUI);
 
     connect(ui->spinBox_ip1,  &QSpinBox::textChanged, this, [this](QString t){ if (t.length() == 3) ui->spinBox_ip2->setFocus(); });
     connect(ui->spinBox_ip2, &QSpinBox::textChanged, this, [this](QString t){ if (t.length() == 3) ui->spinBox_ip3->setFocus(); });
     connect(ui->spinBox_ip3, &QSpinBox::textChanged, this, [this](QString t){ if (t.length() == 3) ui->spinBox_ip4->setFocus(); });
 
-    for (const QHostAddress &address : QNetworkInterface::allAddresses())
-        if (address.protocol() == QAbstractSocket::IPv4Protocol && address != QHostAddress(QHostAddress::LocalHost))
-            localIP = address.toString();
 
-    ui->labelLocalIP->setText("IP lokalne: " + localIP);
+
+    ui->labelLocalIP->setText("IP lokalne: " + uslugi.netService.localIP);
     log("Uruchomiono okno połączeń...");
+    onDisconnected();
+    updateUI();
 }
 
 //Wypisujemy log w boxie z informacją co się dzieje (stan np próba łączenia itp.)
@@ -65,11 +74,19 @@ void ConnectionWindow::changeEvent(QEvent *event)
 
 void ConnectionWindow::closeEvent(QCloseEvent *event)
 {
+    if(uslugi.trybDzialania.get() == WarstaUslug::TrybDzialania::LOCAL)
+    {
+        event->accept();
+        return;
+    }
+
     int res = QMessageBox::question(this, "Zamykanie...", "Czy na pewno chcesz zamknąć okno? Zerwie to aktywne połączenia!");
 
     if (res == QMessageBox::Yes)
     {
         uslugi.netService.disconnect();
+        uslugi.netService.goLocal();
+        uslugi.trybDzialania.set(WarstaUslug::TrybDzialania::LOCAL);
         event->accept();
     } else event->ignore();
 }
@@ -97,7 +114,7 @@ void ConnectionWindow::decomposeIPAddres(QString ip)
 
 void ConnectionWindow::onDeviceFound(QString ip)
 {
-    if (ui->combo_znalezione->findText(ip) == -1 && ip != localIP)
+    if (ui->combo_znalezione->findText(ip) == -1)
     {
         ui->combo_znalezione->addItem(ip);
         log("Znaleziono urządzenie: " + ip);
@@ -108,6 +125,7 @@ void ConnectionWindow::onDeviceFound(QString ip)
 void ConnectionWindow::on_pushButton_clear_clicked()
 {
     ui->logBox->clear();
+    log("Uruchomiono okno połączeń...");
 }
 
 void ConnectionWindow::on_pushButton_Send_clicked()
@@ -118,48 +136,63 @@ void ConnectionWindow::on_pushButton_Send_clicked()
     ui->lineEdit_wiadomosc->setFocus();
 }
 
-void ConnectionWindow::updateStatus(bool connected, QString ip)
+void ConnectionWindow::onConnected()
 {
-    ui->pushButton_Send->setEnabled(connected);
-    ui->pushButton_connection->setEnabled(connected);
-    if(connected)
+    ui->pushButton_Send->setEnabled(true);
+    ui->pushButton_connection->setText("Rozłącz");
+    ui->labelConnStatus->setText("● Połączono");
+    ui->labelConnStatus->setStyleSheet("color: green;");
+    ui->labelRemoteIP->setText("IP zdalne: " + uslugi.netService.remoteIP);
+    statsTimer.start();
+    emit uslugi.updateUI();
+
+}
+
+void ConnectionWindow::onDisconnected()
+{
+    ui->pushButton_Send->setEnabled(false);
+    if(uslugi.trybDzialania.get() == WarstaUslug::TrybDzialania::NET_REG)
     {
-        ui->pushButton_connection->setText("Rozłącz");
-        ui->labelConnStatus->setText("● Połączono");
-        ui->labelConnStatus->setStyleSheet("color: green;");
-        ui->labelRemoteIP->setText("IP zdalne: " + ip);
+        ui->pushButton_connection->setText("Start serwera");
     }
     else
     {
         ui->pushButton_connection->setText("Połącz");
-        ui->labelConnStatus->setText("● Rozłączono");
-        ui->labelConnStatus->setStyleSheet("color: red;");
-        ui->labelRemoteIP->setText("IP zdalne: -");
     }
-}
-void ConnectionWindow::updateUI()
-{
-    bool tryb_sieciowy = uslugi.trybDzialania.get() != WarstaUslug::TrybDzialania::LOCAL;
-    ui->pushButton_connection->setEnabled(tryb_sieciowy);
-    ui->lineEdit_wiadomosc->setEnabled(tryb_sieciowy);
-    ui->pushButton_Send->setEnabled(tryb_sieciowy);
-    ui->pushButton_search->setEnabled(tryb_sieciowy);
-    ui->spinBox_ip1->setEnabled(tryb_sieciowy);
-    ui->spinBox_ip2->setEnabled(tryb_sieciowy);
-    ui->spinBox_ip3->setEnabled(tryb_sieciowy);
-    ui->spinBox_ip4->setEnabled(tryb_sieciowy);
-    ui->spinBox_port->setEnabled(tryb_sieciowy);
-    ui->combo_znalezione->setEnabled(tryb_sieciowy);
+    ui->labelConnStatus->setText("● Rozłączono");
+    ui->labelConnStatus->setStyleSheet("color: red;");
+    ui->labelRemoteIP->setText("IP zdalne: -");
+    ui->labelPacketsReceived->setText("RX: -");
+    ui->labelPacketsSent->setText("TX: -");
+    statsTimer.stop();
+    emit uslugi.updateUI();
 }
 
-void ConnectionWindow::onAuthRequired()
+
+void ConnectionWindow::updateUI()
+{
+    const bool tryb_sieciowy = uslugi.trybDzialania.get() != WarstaUslug::TrybDzialania::LOCAL;
+    const bool tryb_arx = uslugi.trybDzialania.get() == WarstaUslug::TrybDzialania::NET_ARX;
+    ui->pushButton_connection->setEnabled(tryb_sieciowy);
+    ui->lineEdit_wiadomosc->setEnabled(tryb_sieciowy);
+    ui->pushButton_search->setEnabled(tryb_arx);
+    ui->spinBox_ip1->setEnabled(tryb_arx);
+    ui->spinBox_ip2->setEnabled(tryb_arx);
+    ui->spinBox_ip3->setEnabled(tryb_arx);
+    ui->spinBox_ip4->setEnabled(tryb_arx);
+    ui->spinBox_port->setEnabled(tryb_sieciowy);
+    ui->lineEdit_wiadomosc->setEnabled(tryb_sieciowy);
+    ui->combo_znalezione->setEnabled(tryb_arx);
+}
+
+void ConnectionWindow::onAuthChoiceRequired()
 {
     QMessageBox msgBox;
     msgBox.setText("Urządzenie  chce się połączyć.");
     msgBox.setInformativeText("Wybierz tryb autoryzacji:");
     QPushButton *btnCode = msgBox.addButton("Generuj kod", QMessageBox::ActionRole);
     QPushButton *btnNoCode = msgBox.addButton("Bez kodu", QMessageBox::ActionRole);
-    QPushButton *deny = msgBox.addButton("Odrzuć", QMessageBox::RejectRole);
+    msgBox.addButton("Odrzuć", QMessageBox::RejectRole);
     msgBox.exec();
 
     if (msgBox.clickedButton() == btnCode)
@@ -172,13 +205,13 @@ void ConnectionWindow::onAuthRequired()
     else { uslugi.netService.chooseAuthReject(); }
 }
 
-void ConnectionWindow::onAuthError(QString errMsg)
+void ConnectionWindow::onAuthError()
 {
-    QMessageBox::warning(this, "Błąd autoryzacji", QString("Podano błędny kod! %1.").arg(errMsg));
-    onCodeEntryRequired();
+    QMessageBox::warning(this, "Błąd autoryzacji", QString("Podano błędny kod!"));
+    onCodeEntry();
 }
 
-void ConnectionWindow::onCodeEntryRequired()
+void ConnectionWindow::onCodeEntry()
 {
     bool ok;
     QString text;
@@ -207,29 +240,21 @@ void ConnectionWindow::on_radioLokalny_clicked()
     if(uslugi.trybDzialania.get() == WarstaUslug::TrybDzialania::LOCAL)
         return;
 
-    if(!uslugi.netService.isAuthenticated())
-    {
-        uslugi.netService.startLocal();
-        return;
-    }
-
     if (QMessageBox::question(this, "Rozłączanie", "Czy na pewno chcesz przerwać połączenie i wrócić do trybu stacjonarnego?") == QMessageBox::Yes)
     {
         log("Zażądano rozłączenia z partnerem.");
-        uslugi.netService.disconnect();                         // Zlecenie zatrzymania usług sieciowych
+        uslugi.netService.disconnect();
+        uslugi.netService.goLocal();
+        uslugi.trybDzialania.set(WarstaUslug::TrybDzialania::LOCAL);
+
     }
     else
     {
-        QSignalBlocker radio1(ui->radioClient);
-        QSignalBlocker radio2(ui->radioServer);
         if(uslugi.trybDzialania.get() == WarstaUslug::TrybDzialania::NET_ARX)
             ui->radioClient->setChecked(true);
         else
             ui->radioServer->setChecked(true);
     }
-
-    uslugi.trybDzialania.set(WarstaUslug::TrybDzialania::LOCAL);
-    ui->pushButton_connection->setEnabled(false);
 }
 
 
@@ -241,19 +266,16 @@ void ConnectionWindow::on_radioServer_clicked()
     {
         if (QMessageBox::question(this, "Rozłączanie", "Czy na pewno chcesz przerwać połączenie i wrócić do trybu stacjonarnego?") == QMessageBox::Yes)
         {
-            log("Zażądano rozłączenia z partnerem.");
             uslugi.netService.disconnect();
         }
         else
         {
-            QSignalBlocker radio1(ui->radioClient);
-            QSignalBlocker radio2(ui->radioServer);
             ui->radioClient->setChecked(true);
             return;
         }
     }
+    ui->pushButton_connection->setText("Start serwera");
     uslugi.trybDzialania.set(WarstaUslug::TrybDzialania::NET_REG);
-    ui->pushButton_connection->setEnabled(true);
 }
 
 
@@ -265,19 +287,16 @@ void ConnectionWindow::on_radioClient_clicked()
     {
         if (QMessageBox::question(this, "Rozłączanie", "Czy na pewno chcesz przerwać połączenie i wrócić do trybu stacjonarnego?") == QMessageBox::Yes)
         {
-            log("Zażądano rozłączenia z partnerem.");
             uslugi.netService.disconnect();
         }
         else
         {
-            QSignalBlocker radio1(ui->radioClient);
-            QSignalBlocker radio2(ui->radioServer);
             ui->radioClient->setChecked(true);
             return;
         }
     }
+    ui->pushButton_connection->setText("Połącz");
     uslugi.trybDzialania.set(WarstaUslug::TrybDzialania::NET_ARX);
-    ui->pushButton_connection->setEnabled(true);
 }
 
 void ConnectionWindow::setBufferFill(int percentage)
@@ -288,7 +307,6 @@ void ConnectionWindow::setBufferFill(int percentage)
 
 void ConnectionWindow::on_pushButton_search_clicked()
 {
-    log("Skanowanie sieci...");
     uslugi.netService.searchDevices();
 }
 
@@ -302,7 +320,7 @@ void ConnectionWindow::on_pushButton_connection_clicked()
         if (res == QMessageBox::Yes)
         {
             log("Wyłączanie serwera...");
-            uslugi.netService.disconnect();                         // Zlecenie zatrzymania usług sieciowych
+            uslugi.netService.disconnect();
         }
         return;
     }
@@ -318,9 +336,9 @@ void ConnectionWindow::on_pushButton_connection_clicked()
         {
             log("Próba uruchomienia serwera...");
             uslugi.netService.startAsServer(ui->spinBox_port->value());
+            ui->pushButton_connection->setText("Stop serwera");
         }
     }
-    ui->pushButton_connection->setEnabled(false);
 }
 
 
