@@ -87,11 +87,8 @@ void WarstaUslug::sampleReceivedFromARXObjectNowIHaveToBuildTheTickAndSendItToPl
 {
     UAR::Tick tick = ticki_do_uzupelnienia.front();
     ticki_do_uzupelnienia.pop();
-    if(ticki_do_uzupelnienia.size() > 1)
-        qDebug() << "SYMULACJA SIE NIE WYRABIA!!!!";
     tick.wartoscRegulowana = sample.wartoscRegulowana;
     uar.zaktualizujPoprzendieWyjscie(sample.wartoscRegulowana);
-    qDebug() << "DZIAŁA ";
     emit updateCharts(tick, czas);
 }
 

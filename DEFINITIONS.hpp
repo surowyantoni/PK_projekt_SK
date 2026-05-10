@@ -7,14 +7,15 @@
 // ustaw na DEBUG aby skompilować program testujacy
 #define MAIN
 // #define TEST
-// #define DEBUG
+#define DEBUG
 
 
 namespace CONSTS
 {
     namespace PLOTS
     {
-
+        constexpr bool UPDATE_ON_TICK = false;
+        constexpr unsigned int UPDATE_INTERVAL = 1000;
     }
     namespace NET
     {
@@ -70,7 +71,6 @@ namespace CONSTS
     }
     namespace GUI
     {
-        constexpr int refreshInterval = 10;
         constexpr double oknoObserwacji = 10.0;
 
         constexpr double oknoObserwacji_min =  5.0;

@@ -68,7 +68,6 @@ public:
                 owner->timer.start();
             else
                 owner->timer.stop();
-
             emit owner->updateUI();
         }
         void set(const bool& value)

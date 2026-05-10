@@ -1,16 +1,20 @@
 #include "plot.hpp"
 #include "qpainter.h"
+#include <QPainterPath>
 
 Plot::Plot(ListWithExtremes* lista, QWidget *parent)
     : QWidget{parent}
     , lista{lista}
     , refreshTimer{QTimer()}
 {
-    // QObject::connect(&refreshTimer, &QTimer::timeout, this, [this](){
-    //     update();
-    // });
-    // refreshTimer.setInterval(CONSTS::GUI::refreshInterval);
-    // refreshTimer.start();
+    if constexpr (!CONSTS::PLOTS::UPDATE_ON_TICK)
+    {
+        QObject::connect(&refreshTimer, &QTimer::timeout, this, [this](){
+            update();
+        });
+        refreshTimer.setInterval(CONSTS::PLOTS::UPDATE_INTERVAL);
+        refreshTimer.start();
+    }
 }
 
 inline QPointF Plot::mapPoint(const QPointF &p, const QRectF &src, const QRectF &dst)
@@ -37,14 +41,26 @@ void Plot::paintEvent(QPaintEvent *event)
     static const QColor COLOR_ZADANA = QColor::fromRgb(200, 10, 10);
     static const QColor COLOR_REGULOWANA = QColor::fromRgb(10, 200, 10);
     static const QColor COLOR_STEROWANIE = QColor::fromRgb(10, 10, 200);
-    static const QColor COLOR_UCHYB = QColor::fromRgb(10, 200, 200);
-    static const QColor COLOR_PID_P = QColor::fromRgb(200, 200, 10);
-    static const QColor COLOR_PID_I = QColor::fromRgb(200, 10, 200);
-    static const QColor COLOR_PID_D = QColor::fromRgb(100, 0, 250);
+    static const QColor COLOR_UCHYB = QColor::fromRgb(250, 50, 50);
+    static const QColor COLOR_PID_P = QColor::fromRgb(20, 90, 10);
+    static const QColor COLOR_PID_I = QColor::fromRgb(100, 10, 200);
+    static const QColor COLOR_PID_D = QColor::fromRgb(100, 0, 150);
     constexpr double STOSUNKI_ROZMIARU[] = { 5.0, 2.0, 2.0, 2.0};
     constexpr double STOSUNKI_ROZMIARU_SUMA = 11.0;
     constexpr int ODSTEPY_PX = 20;
     constexpr int MARGINES_WYKRESOW = 10;
+    const int OFFSET_LEFT_BRZEGOWE = 30;
+    static const QString TYTULY_WYKRESOW[] = {
+        "Wartosc zadana i regulowana",
+        "Sterowanie",
+        "Uchyb",
+        "Składowe PID",
+    };
+    static const QPoint PODZIALKA_Y = QPoint(- OFFSET_LEFT_BRZEGOWE / 2, 0);
+    static const QPoint PODZIALKA_X = QPoint(0, OFFSET_LEFT_BRZEGOWE / 2);
+    static const QPen GRUBY_PEN = QPen(Qt::BrushStyle::SolidPattern, 2);
+    constexpr qreal SZEROKOSC_PEDZLA_DLA_TEKSTU_OPISU_SERII = 1.0;
+    constexpr int SZEROKOSC_TEKSTU_OPISU_SERII_PX = 200;
 
 
     const UAR::Tick MAX_VALUES = {
@@ -78,7 +94,7 @@ void Plot::paintEvent(QPaintEvent *event)
         std::make_pair(MAX_VALUES.uchyb, MIN_VALUES.uchyb),
         std::make_pair(MAX_PID, MIN_PID),
     };
-    const int OFFSET_LEFT_BRZEGOWE = 30;
+
 
 
     const QRect ramka_zadana_i_reg =
@@ -108,23 +124,10 @@ void Plot::paintEvent(QPaintEvent *event)
         &ramka_uchyb,
         &ramka_pid
     };
-    static const QString TYTULY_WYKRESOW[] = {
-        "Wartosc zadana i regulowana",
-        "Sterowanie",
-        "Uchyb",
-        "Składowe PID",
-    };
 
-
-    p.drawText(ramka_zadana_i_reg.center().x(), ramka_zadana_i_reg.top() - (ODSTEPY_PX / 4), "Czas [s]");
-
-    static const QPoint PODZIALKA_Y = QPoint(- OFFSET_LEFT_BRZEGOWE / 2, 0);
-    static const QPoint PODZIALKA_X = QPoint(0, OFFSET_LEFT_BRZEGOWE / 2);
-    static const QPen GRUBY_PEN = QPen(Qt::BrushStyle::SolidPattern, 2);
     int idx_ramki = 0;
     for(auto ramka : RAMKI)
     {
-        // p.setBrush(Qt::BrushStyle::CrossPattern);
         const_cast<QBrush&>(p.brush()).setColor(Qt::gray);
         p.setPen(GRUBY_PEN);
         p.drawRect(*ramka);
@@ -144,26 +147,27 @@ void Plot::paintEvent(QPaintEvent *event)
     }
 
     //Opisy serii
-    constexpr qreal SZEROKOSC_TEKSTU_OPISU_SERII = 2.0;
+    p.drawText(ramka_zadana_i_reg.center().x(), ramka_zadana_i_reg.top() - (ODSTEPY_PX / 4), "Czas [s]");
 
-    p.setPen(QPen(QBrush(COLOR_ZADANA), SZEROKOSC_TEKSTU_OPISU_SERII));
-    p.drawText(ramka_zadana_i_reg.topRight() + QPoint(-140, ODSTEPY_PX    ), "Wartość zadana");
-    p.setPen(QPen(QBrush(COLOR_REGULOWANA), SZEROKOSC_TEKSTU_OPISU_SERII));
-    p.drawText(ramka_zadana_i_reg.topRight() + QPoint(-140, ODSTEPY_PX * 2), "Wartość regulowana");
+    p.setFont(QFont("Soege UI", 12, 600));
+    p.setPen(QPen(QBrush(COLOR_ZADANA), SZEROKOSC_PEDZLA_DLA_TEKSTU_OPISU_SERII));
+    p.drawText(ramka_zadana_i_reg.topRight() + QPoint(-SZEROKOSC_TEKSTU_OPISU_SERII_PX, ODSTEPY_PX * 2 ), "Wartość zadana");
+    p.setPen(QPen(QBrush(COLOR_REGULOWANA), SZEROKOSC_PEDZLA_DLA_TEKSTU_OPISU_SERII));
+    p.drawText(ramka_zadana_i_reg.topRight() + QPoint(-SZEROKOSC_TEKSTU_OPISU_SERII_PX, ODSTEPY_PX * 3), "Wartość regulowana");
 
 
-    p.setPen(QPen(QBrush(COLOR_STEROWANIE), SZEROKOSC_TEKSTU_OPISU_SERII));
-    p.drawText(ramka_sterowanie.topRight() + QPoint(-140, ODSTEPY_PX    ), "Sterowanie");
+    p.setPen(QPen(QBrush(COLOR_STEROWANIE), SZEROKOSC_PEDZLA_DLA_TEKSTU_OPISU_SERII));
+    p.drawText(ramka_sterowanie.topRight() + QPoint(-SZEROKOSC_TEKSTU_OPISU_SERII_PX, ODSTEPY_PX * 2), "Sterowanie");
 
-    p.setPen(QPen(QBrush(COLOR_UCHYB), SZEROKOSC_TEKSTU_OPISU_SERII));
-    p.drawText(ramka_uchyb.topRight() + QPoint(-140, ODSTEPY_PX    ), "Uchyb");
+    p.setPen(QPen(QBrush(COLOR_UCHYB), SZEROKOSC_PEDZLA_DLA_TEKSTU_OPISU_SERII));
+    p.drawText(ramka_uchyb.topRight() + QPoint(-SZEROKOSC_TEKSTU_OPISU_SERII_PX, ODSTEPY_PX * 2), "Uchyb");
 
-    p.setPen(QPen(QBrush(COLOR_PID_P), SZEROKOSC_TEKSTU_OPISU_SERII));
-    p.drawText(ramka_pid.topRight() + QPoint(-140, ODSTEPY_PX    ), "Część proporcjonalna (P)");
-    p.setPen(QPen(QBrush(COLOR_PID_I), SZEROKOSC_TEKSTU_OPISU_SERII));
-    p.drawText(ramka_pid.topRight() + QPoint(-140, ODSTEPY_PX * 2), "Część integracyjna   (I)");
-    p.setPen(QPen(QBrush(COLOR_PID_D), SZEROKOSC_TEKSTU_OPISU_SERII));
-    p.drawText(ramka_pid.topRight() + QPoint(-140, ODSTEPY_PX * 3), "Część rożniczkująca  (D)");
+    p.setPen(QPen(QBrush(COLOR_PID_P), SZEROKOSC_PEDZLA_DLA_TEKSTU_OPISU_SERII));
+    p.drawText(ramka_pid.topRight() + QPoint(-SZEROKOSC_TEKSTU_OPISU_SERII_PX, ODSTEPY_PX * 2), "Część proporcjonalna (P)");
+    p.setPen(QPen(QBrush(COLOR_PID_I), SZEROKOSC_PEDZLA_DLA_TEKSTU_OPISU_SERII));
+    p.drawText(ramka_pid.topRight() + QPoint(-SZEROKOSC_TEKSTU_OPISU_SERII_PX, ODSTEPY_PX * 3), "Część integracyjna   (I)");
+    p.setPen(QPen(QBrush(COLOR_PID_D), SZEROKOSC_PEDZLA_DLA_TEKSTU_OPISU_SERII));
+    p.drawText(ramka_pid.topRight() + QPoint(-SZEROKOSC_TEKSTU_OPISU_SERII_PX, ODSTEPY_PX * 4), "Część rożniczkująca  (D)");
 
 
 
@@ -193,14 +197,36 @@ void Plot::paintEvent(QPaintEvent *event)
     }
     static const constexpr int SZEROKOSC_LINII = 2;
 
-    for (size_t idx = 1; idx < lista->howManyPoints() - 1; ++idx)
+
+
+    QPainterPath pathSterowanie;
+    QPainterPath pathUchyb;
+    QPainterPath pathRegulowana;
+    QPainterPath pathZadana;
+    QPainterPath pathPidP;
+    QPainterPath pathPidI;
+    QPainterPath pathPidD;
+    pathSterowanie.moveTo(last_sterowanie);
+    pathUchyb.moveTo(last_uchyb);
+    pathRegulowana.moveTo(last_regulowana);
+    pathZadana.moveTo(last_zadana);
+    if(last_pid)
     {
-        // UNDERSAMPLING
-        // if(lista->howManyPoints() > 2000 && idx % 2 == 0)
-        // {
-        //     punkt++;
-        //     continue;
-        // }
+        pathPidP.moveTo(last_pid_P);
+        pathPidI.moveTo(last_pid_I);
+        pathPidD.moveTo(last_pid_D);
+    }
+
+
+    // UNDERSAMPLING
+    size_t step = lista->howManyPoints() / 2000;
+    if(step == 0)
+        step = 1;
+    qDebug() << step;
+
+
+    for (size_t idx = step; idx < lista->howManyPoints() - 1; idx += step)
+    {
 
         czas_on_plot = mapValue(lista->CzasMin(), lista->CzasMax(), ramka_zadana_i_reg.left(), ramka_zadana_i_reg.right(), punkt->second);
         QPoint sterowanie = QPoint(czas_on_plot, mapValue(MIN_VALUES.sterowanie, MAX_VALUES.sterowanie, ramka_sterowanie.bottom() - MARGINES_WYKRESOW, ramka_sterowanie.top() + MARGINES_WYKRESOW, punkt->first.sterowanie));
@@ -224,43 +250,55 @@ void Plot::paintEvent(QPaintEvent *event)
             p.setPen(GRUBY_PEN);
             QPoint spot(czas_on_plot, RAMKI[3]->bottom());
             p.drawLine(spot, spot + PODZIALKA_X);
-            p.drawText(spot + QPoint(3, OFFSET_LEFT_BRZEGOWE / 2), QString::number(sekunda, 10, 0) + " s");
+            p.drawText(spot + QPoint(3, OFFSET_LEFT_BRZEGOWE / 3 * 2), QString::number(sekunda, 10, 0) + " s");
         }
 
-
-        // Rysowanie punktów, poprzedni policzony i obecny
-        p.setPen(QPen(QBrush(COLOR_STEROWANIE), SZEROKOSC_LINII));
-        p.drawLine(last_sterowanie, sterowanie);
-        p.setPen(QPen(QBrush(COLOR_UCHYB), SZEROKOSC_LINII));
-        p.drawLine(last_uchyb, uchyb);
-        p.setPen(QPen(QBrush(COLOR_REGULOWANA), SZEROKOSC_LINII));
-        p.drawLine(last_regulowana, regulowana);
-        p.setPen(QPen(QBrush(COLOR_ZADANA), SZEROKOSC_LINII));
-        p.drawLine(last_zadana, zadana);
+        pathSterowanie.lineTo(sterowanie);
+        pathUchyb.lineTo(uchyb);
+        pathRegulowana.lineTo(regulowana);
+        pathZadana.lineTo(zadana);
         if(punkt->first.pid.has_value())
         {
             if(last_pid)
             {
-                p.setPen(QPen(QBrush(COLOR_PID_P), SZEROKOSC_LINII));
-                p.drawLine(last_pid_P, pid_P);
-                p.setPen(QPen(QBrush(COLOR_PID_I), SZEROKOSC_LINII));
-                p.drawLine(last_pid_I, pid_I);
-                p.setPen(QPen(QBrush(COLOR_PID_D), SZEROKOSC_LINII));
-                p.drawLine(last_pid_D, pid_D);
+                pathPidP.lineTo(pid_P);
+                pathPidI.lineTo(pid_I);
+                pathPidD.lineTo(pid_D);
             }
-            last_pid_P = pid_P;
-            last_pid_I = pid_I;
-            last_pid_D = pid_D;
+            else
+            {
+                pathPidP.moveTo(pid_P);
+                pathPidI.moveTo(pid_I);
+                pathPidD.moveTo(pid_D);
+            }
         }
-        last_sterowanie = sterowanie;
-        last_uchyb = uchyb;
-        last_regulowana = regulowana;
-        last_zadana = zadana;
+
+
+        // last_sterowanie = sterowanie;
+        // last_uchyb = uchyb;
+        // last_regulowana = regulowana;
+        // last_zadana = zadana;
         last_pid = punkt->first.pid.has_value();
         last_czas = punkt->second;
-        punkt++;
+
+        std::advance(punkt, step);
     }
 
+
+    p.setPen(QPen(QBrush(COLOR_STEROWANIE), SZEROKOSC_LINII));
+    p.drawPath(pathSterowanie);
+    p.setPen(QPen(QBrush(COLOR_UCHYB), SZEROKOSC_LINII));
+    p.drawPath(pathUchyb);
+    p.setPen(QPen(QBrush(COLOR_REGULOWANA), SZEROKOSC_LINII));
+    p.drawPath(pathRegulowana);
+    p.setPen(QPen(QBrush(COLOR_ZADANA), SZEROKOSC_LINII));
+    p.drawPath(pathZadana);
+    p.setPen(QPen(QBrush(COLOR_PID_P), SZEROKOSC_LINII));
+    p.drawPath(pathPidP);
+    p.setPen(QPen(QBrush(COLOR_PID_I), SZEROKOSC_LINII));
+    p.drawPath(pathPidI);
+    p.setPen(QPen(QBrush(COLOR_PID_D), SZEROKOSC_LINII));
+    p.drawPath(pathPidD);
 }
 
 

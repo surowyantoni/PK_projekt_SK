@@ -25,7 +25,7 @@ MainWindow::MainWindow(QWidget *parent)
     });
 
 
-    // Podmieniamy widget na własną klasę Plot
+    // Podmieniamy widget na własną klase Plot
     ui->plot->deleteLater();
     ui->plot = new Plot(&pamiec_wykresow, this);
     ui->verticalLayout_plot->addWidget(ui->plot);
@@ -100,6 +100,9 @@ void MainWindow::externalUIUpdate()
     const QSignalBlocker bHyst(ui->spinBox_szerokoscHisterezy);
     const QSignalBlocker bOnOffU(ui->spinBox_wartoscSterowaniaON);
 
+
+    ui->pushButton_startStop->setText(uslugi.dziala.get() ? "STOP" : "START");
+
     // --- Generator ---
     ui->spinBox_amplituda->setValue(uslugi.generator.amplituda.get());
     ui->spinBox_skladowaStala->setValue(uslugi.generator.skladowaStala.get());
@@ -165,7 +168,6 @@ void MainWindow::externalUIUpdate()
     ui->groupBox_generator->setEnabled(isRegulator);
     ui->groupBox_filtr->setEnabled(isRegulator);
     ui->pushButton_startStop->setEnabled(isConnected);
-    ui->pushButton_startStop->setText(uslugi.dziala.get() ? "STOP" : "START");
     ui->pushButton_reset->setEnabled(isConnected);
 }
 
@@ -193,8 +195,10 @@ void MainWindow::chartsUpdate(UAR::Tick tick, WarstaUslug::Czas czas)
             pamiec_wykresow.deleteFirstValue();
         pamiec_wykresow.deleteFirstValue();
     }
-    // connection_window.setBufferFill(uslugi.getBufferFillPercentage());
-    ui->plot->update();
+    if constexpr (!CONSTS::PLOTS::UPDATE_ON_TICK)
+    {
+        ui->plot->update();
+    }
 }
 
 MainWindow::~MainWindow()
