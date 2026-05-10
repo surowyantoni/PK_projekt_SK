@@ -14,15 +14,42 @@ PIDTick RegulatorPID::symuluj(double uchyb)
     PIDTick tick;
 
     tick.P = k.get() * uchyb;
+    tick.D = Td.get() * (uchyb - poprzedniUchyb);
+    poprzedniUchyb = uchyb;
 
     if(Ti.get() == 0.0)
     {
         tick.I = 0.0;
+        return tick;
     }
-    else
+
+
+    sumaUchybowCalkowanieZewnetrzne += uchyb;
+    sumaUchybowCalkowanieWewnetrzne += uchyb / Ti.get();
+    switch (sposobLiczeniaCalki.get())
     {
-        sumaUchybowCalkowanieZewnetrzne += uchyb;
-        sumaUchybowCalkowanieWewnetrzne += (double)uchyb / Ti.get();
+    case Zewnetrzne:
+        tick.I = (double)sumaUchybowCalkowanieZewnetrzne / Ti.get();
+        break;
+    case Wewnetrzne:
+        tick.I = sumaUchybowCalkowanieWewnetrzne;
+        break;
+    }
+
+
+
+    double sterowanie_przed_filtrami = (double)tick;
+    if (antiWindupActive.get()) {
+        if (sterowanie_przed_filtrami > limityWyjscia.getMax())
+        {
+            sumaUchybowCalkowanieZewnetrzne -= uchyb;
+            sumaUchybowCalkowanieWewnetrzne -= uchyb / Ti.get();
+        }
+        else if (sterowanie_przed_filtrami < limityWyjscia.getMin())
+        {
+            sumaUchybowCalkowanieZewnetrzne -= uchyb;
+            sumaUchybowCalkowanieWewnetrzne -= uchyb / Ti.get();
+        }
         switch (sposobLiczeniaCalki.get())
         {
         case Zewnetrzne:
@@ -34,8 +61,6 @@ PIDTick RegulatorPID::symuluj(double uchyb)
         }
     }
 
-    tick.D = Td.get() * (uchyb - poprzedniUchyb);
-    poprzedniUchyb = uchyb;
     return tick;
 }
 
@@ -44,11 +69,14 @@ void RegulatorPID::zmienSposobLiczeniaCalki(SposobLiczeniaCalki value)
     // nic do roboty
     if(value == sposobLiczeniaCalki.get())
         return;
+    if (Ti.get() != 0.0)
+        return;
+
 
     switch (value)
     {
     case SposobLiczeniaCalki::Wewnetrzne:
-        sumaUchybowCalkowanieWewnetrzne = sumaUchybowCalkowanieZewnetrzne / Ti.get();
+            sumaUchybowCalkowanieWewnetrzne = sumaUchybowCalkowanieZewnetrzne / Ti.get();
         break;
     case SposobLiczeniaCalki::Zewnetrzne:
         sumaUchybowCalkowanieZewnetrzne = sumaUchybowCalkowanieWewnetrzne * Ti.get();

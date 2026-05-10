@@ -3,7 +3,7 @@
 
 #include "DEFINITIONS.hpp"
 
-#ifdef DEBUG
+#ifdef TEST
 #include <iostream>
 #include <iomanip>
 #include "ARX.hpp"

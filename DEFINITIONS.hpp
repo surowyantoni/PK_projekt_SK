@@ -6,11 +6,16 @@
 // ustaw na MAIN aby skompilować program docelowy
 // ustaw na DEBUG aby skompilować program testujacy
 #define MAIN
+// #define TEST
 // #define DEBUG
 
 
 namespace CONSTS
 {
+    namespace PLOTS
+    {
+
+    }
     namespace NET
     {
         constexpr int DISCOVERY_PORT = 5001;
@@ -63,6 +68,7 @@ namespace CONSTS
     }
     namespace GUI
     {
+        constexpr int refreshInterval = 10;
         constexpr double oknoObserwacji = 10.0;
 
         constexpr double oknoObserwacji_min =  5.0;

@@ -33,7 +33,6 @@ void NetService::chooseAuthWithoutCode()
 {
     sendDataPackage(AUTH_SUCCESS);
     authenticated = true;
-    uslugi->trybDzialania.set(WarstaUslug::TrybDzialania::NET_REG);
     emit logAppend("Połączono w trybie bez autoryzacji.");
 }
 void  NetService::chooseAuthReject()
@@ -48,7 +47,7 @@ void NetService::authCodeVerification(int code)
 
 void NetService::startAsServer(int port)
 {
-    handleDisconnection();
+    startLocal();
     server = new QTcpServer(this);
 
     connect(server, &QTcpServer::newConnection, this, &NetService::handleNewClient);
@@ -59,7 +58,7 @@ void NetService::startAsServer(int port)
 
 void NetService::connectAsClient(QString ip, int port)
 {
-    handleDisconnection();
+    startLocal();
     socket = new QTcpSocket(this);
 
     connect(socket, &QTcpSocket::connected, this, [this]()
@@ -70,7 +69,7 @@ void NetService::connectAsClient(QString ip, int port)
             {
                 processDataPackage(socket->readAll());
             });
-    connect(socket, &QTcpSocket::disconnected, this, &NetService::handleDisconnection);
+    connect(socket, &QTcpSocket::disconnected, this, &NetService::startLocal);
     socket->connectToHost(ip, port);
     remoteIP = ip;
 
@@ -79,12 +78,12 @@ void NetService::connectAsClient(QString ip, int port)
 
 void NetService::disconnect()
 {
-    if(uslugi->trybDzialania.get() != WarstaUslug::TrybDzialania::LOCAL)
+    if(isAuthenticated())
     {
         sendDataPackage(DISCONNECT_NOTIFY);
         emit logAppend("Połączenie zerwane!");
-        handleDisconnection();
     }
+    startLocal();
 }
 void NetService::sendText(QString message)
 {
@@ -144,20 +143,20 @@ void NetService::handleNewClient()
                 {
                     processDataPackage(socket->readAll());
                 });
-        connect(socket, &QTcpSocket::disconnected, this, &NetService::handleDisconnection);
+        connect(socket, &QTcpSocket::disconnected, this, &NetService::startLocal);
         remoteIP = QHostAddress(socket->peerAddress().toIPv4Address()).toString();
         emit logAppend("Wykryto połączenie przychodzące z IP: " + remoteIP);
     }
 }
 
-void NetService::handleDisconnection()
+void NetService::startLocal()
 {
     if(isServer())
     {
         server->close();
         server->deleteLater();
     }
-    if(socket != nullptr)
+    if(isAuthenticated())
     {
         socket->disconnectFromHost();
         socket->deleteLater();
@@ -167,9 +166,11 @@ void NetService::handleDisconnection()
 
     unsuccessfullAuthAttempts = 0;
     authenticated = false;
-    uslugi->trybDzialania.set(WarstaUslug::TrybDzialania::LOCAL);
+    emit connectionStatusChanged(true, remoteIP);
     emit uslugi->updateUI();
 }
+
+
 
 void NetService::processDiscoveryUdp()
 {
@@ -198,6 +199,7 @@ void NetService::processDataPackage(QByteArray data)
     switch (type)
     {
         case CONNECTION_REQUEST:
+            if(!isServer()) return;
             emit authQuestionForUser();
             break;
 
@@ -219,7 +221,7 @@ void NetService::processDataPackage(QByteArray data)
             {
                 sendDataPackage(AUTH_SUCCESS);
                 authenticated = true;
-                uslugi->trybDzialania.set(WarstaUslug::TrybDzialania::NET_REG);
+                emit connectionStatusChanged(true, remoteIP);
                 emit logAppend("Połączono klienta w trybie autoryzacji kodem.");
             }
             else
@@ -240,7 +242,7 @@ void NetService::processDataPackage(QByteArray data)
         case AUTH_SUCCESS:
             if(isServer()) return;
             authenticated = true;
-            uslugi->trybDzialania.set(WarstaUslug::TrybDzialania::NET_ARX);
+            emit connectionStatusChanged(true, remoteIP);
             emit logAppend("Połączenie udane! Tryb sieciowy aktywny.");
         break;
 
@@ -250,69 +252,69 @@ void NetService::processDataPackage(QByteArray data)
 
         case DISCONNECT_NOTIFY:
             emit logAppend("Partner zakończył połączenie.");
-            handleDisconnection(); // Metoda czyszcząca bez wysyłania powiadomienia (uniknięcie pętli)
+            startLocal(); // Metoda czyszcząca bez wysyłania powiadomienia (uniknięcie pętli)
             break;
 
         case CONFIG_PID:
-            if(!authenticated) return;
+            disconnectIfNotAuthenticated();
             uslugi->pid.fromByteArray(dane_pakietu);
             emit uslugi->updateUI();
             break;
 
         case CONFIG_ARX:
-            if(!authenticated) return;
+            disconnectIfNotAuthenticated();
             uslugi->arx.fromByteArray(dane_pakietu);
             emit uslugi->updateUI();
             break;
 
         case CONFIG_GEN:
-            if(!authenticated) return;
+            disconnectIfNotAuthenticated();
             uslugi->generator.fromByteArray(dane_pakietu);
             emit uslugi->updateUI();
             break;
 
         case CONFIG_ONOFF:
-            if(!authenticated) return;
+            disconnectIfNotAuthenticated();
             uslugi->onOff.fromByteArray(dane_pakietu);
             emit uslugi->updateUI();
             break;
 
         case CONFIG_REGULATION:
-            if(!authenticated) return;
+            disconnectIfNotAuthenticated();
             uslugi->regulacja.fromByteArray(dane_pakietu);
             emit uslugi->updateUI();
             break;
 
         case CONFIG_INTERVAL:
-            if(!authenticated) return;
+            disconnectIfNotAuthenticated();
             uslugi->interwal.fromByteArray(dane_pakietu);
             emit uslugi->updateUI();
             break;
 
         case SIM_SAMPLE_FROM_OBJECT:
-            if(!authenticated) return;
+            disconnectIfNotAuthenticated();
             uslugi->sampleReceivedFromARXObjectNowIHaveToBuildTheTickAndSendItToPlotsToUpdateThem(SimSampleFromObject::fromByteArray(dane_pakietu));
             // emit sampleReceivedFromObject(sample);
             break;
 
         case SIM_SAMPLE_FROM_REGULATOR:
-            if(!authenticated) return;
+            disconnectIfNotAuthenticated();
             uslugi->sampleReceivedFromREgulatorInstanceNowINeedToForewardItToTheUARAndThenSimmulateARXReactionAndSensTheSignalBack(SimSampleFromRegulator::fromByteArray(dane_pakietu));
             // emit sampleReceivedFromServer(s);
             break;
 
         case SIM_START:
-            if(!authenticated) return;
+            disconnectIfNotAuthenticated();
             uslugi->dziala.set(true);
             emit uslugi->updateUI();
             break;
         case SIM_STOP:
-            if(!authenticated) return;
+            disconnectIfNotAuthenticated();
             uslugi->dziala.set(false);
             emit uslugi->updateUI();
             break;
         case SIM_RESTART:
-            if(!authenticated) return;
+            disconnectIfNotAuthenticated();
             uslugi->reset();
             emit simmulationRestart();
             emit uslugi->updateUI();
@@ -325,17 +327,31 @@ void NetService::sendDataPackage(quint8 type, const QByteArray &data)
     QByteArray package;
     QDataStream out(&package, QIODevice::WriteOnly);
     out << type << data;
-    assert(socket != nullptr);
+    assert(isAuthenticated());
     if(socket->isOpen())
     {
         socket->write(package);
         socket->flush();
+        transmitedPacketCounter++;
     }
     else
         qDebug() << "[ERR] Połączenie nie jest otwarte";
+}
+void NetService::disconnectIfNotAuthenticated()
+{
+    if(!authenticated)
+    {
+        disconnect();
+    }
 }
 
 bool NetService::isServer()
 {
     return server != nullptr;
+}
+bool NetService::isAuthenticated()
+{
+    if(socket == nullptr)
+        return false;
+    return authenticated;
 }

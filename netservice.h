@@ -14,6 +14,8 @@ class NetService : public QObject
 public:
     explicit NetService(WarstaUslug* parent = nullptr);
     QString remoteIP = "";
+    bool isAuthenticated();
+    bool isServer();
 signals:
     void connectionStatusChanged(bool connected, QString remoteIP = "");
     void logAppend(QString log);
@@ -64,14 +66,16 @@ public slots:
     void sendSample(SimSampleFromObject sample);
     void sendSimmulationRestart();
     void sendSimmulationRunning(bool running);
+    void startLocal();
 
 private slots:
     void handleNewClient();
-    void handleDisconnection();
     void processDiscoveryUdp();
     void processDataPackage(QByteArray data);
 
+
 private:
+    void disconnectIfNotAuthenticated();
     void sendDataPackage(quint8 type, const QByteArray &data = QByteArray());
     // Client *client = nullptr;
     // Server *server = nullptr;
@@ -80,13 +84,13 @@ private:
     QTcpServer* server = nullptr;
     WarstaUslug* uslugi;
 
-    bool isServer();
 
     int currentAuthCode;
     int unsuccessfullAuthAttempts = 0;
     bool authenticated = false;
 
     int receivedPacketCounter = 0;
+    int transmitedPacketCounter = 0;
 };
 
 #endif // NETSERVICE_H

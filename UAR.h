@@ -16,17 +16,14 @@ public:
         double wartoscZadana;
     };
     enum class RodzajSterowania { OnOff, PID };
-    UAR(ARX* ARX, GeneratorWartosci* gen, RegulatorPID* PID);
-    UAR(ARX* ARX, GeneratorWartosci* gen, RegulatorOnOff* OnOff);
+    UAR(ARX* ARX, GeneratorWartosci* gen, RegulatorPID* PID, RegulatorOnOff* OnOff, RodzajSterowania rodzaj);
 
-    void setPID(RegulatorPID* PID);
-    void setOnOff(RegulatorOnOff* OnOff);
-    RodzajSterowania getWybranyRegulator();
     Tick symuluj(uint32_t interwal);
     double symuluj(double wartZadana); // TYLKO do pisania testów
     double symulujObiekt(double wejscie);
     Tick symulujBezObiektu(uint32_t interwal);
     void zaktualizujPoprzendieWyjscie(double wyjscie);
+    RodzajSterowania regulator;
 private:
     ARX* ARX;
     RegulatorPID* PID;

@@ -13,14 +13,16 @@ WarstaUslug::WarstaUslug()
     , pid(RegulatorPID())
     , onOff(RegulatorOnOff())
     , generator(GeneratorWartosci())
-    , uar(UAR(&arx, &generator, &pid))
+    , uar(UAR(&arx, &generator, &pid, &onOff, (UAR::RodzajSterowania)CONSTS::UAR::regulator))
     , timer(this)
     , czas{0}
+    , elapsed()
 {
     timer.setTimerType(Qt::PreciseTimer); // żeby działał dokładniej
     dziala.set(dziala.get()); // wywoalanie settera - ustawienie timera
     interwal.set(interwal.get()); // wywoalanie settera - ustawienie timera
     QObject::connect(&timer, &QTimer::timeout, this, &WarstaUslug::symuluj);
+    elapsed.start();
     // QObject::connect(netService, &NetService::sampleReceivedFromServer, this, &WarstaUslug::sampleReceivedFromREgulatorInstanceNowINeedToForewardItToTheUARAndThenSimmulateARXReactionAndSensTheSignalBack);
     // QObject::connect(netService, &NetService::sampleReceivedFromClient, this, &WarstaUslug::sampleReceivedFromARXObjectNowIHaveToBuildTheTickAndSendItToPlotsToUpdateThem);
 }
@@ -29,7 +31,7 @@ int WarstaUslug::getBufferFillPercentage()
     if(trybDzialania.get() == TrybDzialania::LOCAL)
         return 0;
 
-    return (double)ticki_do_uzupelnienia.size() / CONSTS::NET::MAX_SAMPLES_LAG;
+    return (double)ticki_do_uzupelnienia.size() / CONSTS::NET::MAX_SAMPLES_LAG * 100;
 }
 void WarstaUslug::reset()
 {
@@ -43,6 +45,8 @@ void WarstaUslug::reset()
 void WarstaUslug::symuluj()
 {
     czas = interwal.get() + czas;
+    measuredInterval.value = elapsed.elapsed();
+    elapsed.start();
     switch (trybDzialania.get())
     {
     case TrybDzialania::LOCAL:

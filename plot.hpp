@@ -11,10 +11,18 @@ class Plot : public QWidget
     static inline QPointF mapPoint(const QPointF &p, const QRectF &src, const QRectF &dst);
 public:
     explicit Plot(ListWithExtremes* lista, QWidget *parent = nullptr);
-signals:
+    PROP(qint64, Plot)
+        GETTER(qint64)
+        void set(const qint64& refresh)
+        {
+            owner->refreshTimer.setInterval(refresh);
+            this->value = refresh;
+        }
+    } refreshInterval;
 protected:
     void paintEvent(QPaintEvent *event) override;
     ListWithExtremes* lista;
+    QTimer refreshTimer;
 };
 
 #endif // PLOT_HPP

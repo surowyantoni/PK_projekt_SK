@@ -8,6 +8,7 @@
 #include "qtimer.h"
 #include "utils.hpp"
 #include <queue>
+#include <QElapsedTimer>
 
 //#include "mainwindow.h"
 // #include <QObject>
@@ -30,9 +31,8 @@ public:
         GETTER(TrybDzialania)
         void set(TrybDzialania tryb)
         {
-            if(tryb != this->value)
-            emit owner->netService.connectionStatusChanged(tryb != TrybDzialania::LOCAL, owner->netService.remoteIP);
             this->value = tryb;
+            emit owner->updateUI();
         }
     } trybDzialania;
 
@@ -64,7 +64,7 @@ public:
     PROP(bool, WarstaUslug)
         void set(const bool& value)
         {
-            if(owner->trybDzialania.get() != TrybDzialania::LOCAL)
+            if(owner->netService.isAuthenticated())
             {
                 owner->netService.sendSimmulationRunning(value);
                 if(owner->trybDzialania.get() == TrybDzialania::NET_ARX)
@@ -84,20 +84,13 @@ public:
     PROP(UAR::RodzajSterowania, WarstaUslug)
         void set(const UAR::RodzajSterowania& value)
         {
-            switch (value)
-            {
-            case UAR::RodzajSterowania::OnOff:
-                owner->uar.setOnOff(&owner->onOff);
-            case UAR::RodzajSterowania::PID:
-                owner->uar.setPID(&owner->pid);
-                break;
-            }
-            if(owner->trybDzialania.get() != WarstaUslug::TrybDzialania::LOCAL)
+            owner->uar.regulator = value;
+            if(owner->netService.isAuthenticated())
                 owner->netService.sendRegulationTypeConfig();
         }
         const UAR::RodzajSterowania get() const
         {
-            return owner->uar.getWybranyRegulator();
+            return owner->uar.regulator;
         }
         void fromByteArray(QByteArray data)
         {
@@ -118,6 +111,9 @@ public:
 
     void reset();
     int getBufferFillPercentage();
+    PROP(qint64, WarstaUslug)
+        GETTER(qint64);
+    } measuredInterval;
     NetService netService;
 
 
@@ -129,7 +125,7 @@ public:
     {
         return AccessNotifier<ARX>(&arx, [this]()
         {
-            if(this->trybDzialania.get() != WarstaUslug::TrybDzialania::LOCAL)
+            if(this->netService.isAuthenticated())
                 this->netService.sendArxConfig();
         });
     }
@@ -138,7 +134,7 @@ public:
     {
         return AccessNotifier<RegulatorPID>(&pid, [this]()
         {
-           if(this->trybDzialania.get() != WarstaUslug::TrybDzialania::LOCAL)
+           if(this->netService.isAuthenticated())
                this->netService.sendPidConfig();
         });
     }
@@ -146,7 +142,7 @@ public:
     {
         return AccessNotifier<RegulatorOnOff>(&onOff, [this]()
         {
-            if(this->trybDzialania.get() != WarstaUslug::TrybDzialania::LOCAL)
+            if(this->netService.isAuthenticated())
                 this->netService.sendOnOffConfig();
         });
     }
@@ -154,7 +150,7 @@ public:
     {
         return AccessNotifier<GeneratorWartosci>(&generator, [this]()
         {
-            if(this->trybDzialania.get() != WarstaUslug::TrybDzialania::LOCAL)
+            if(this->netService.isAuthenticated())
                 this->netService.sendGenConfig();
         });
     }
@@ -179,6 +175,7 @@ private:
     UAR uar;
     QTimer timer;
     Czas czas;
+    QElapsedTimer elapsed;
 
     std::queue<UAR::Tick> ticki_do_uzupelnienia;
 private slots:

@@ -10,7 +10,7 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
     , uslugi(WarstaUslug())
     , parameters_arx_window(uslugi)
-    , connection_window(ConnectionWindow(&uslugi, this))
+    , connection_window(ConnectionWindow(uslugi, this))
 {
     ui->setupUi(this);
     externalUIUpdate();
@@ -19,6 +19,9 @@ MainWindow::MainWindow(QWidget *parent)
     QObject::connect(&uslugi.netService, &NetService::simmulationRestart, this, [this](){
         uslugi.reset();
         pamiec_wykresow.clear();
+    });
+    QObject::connect(&parameters_arx_window, &ParametryARXWindow::closed, this, [this](){
+        ui->pushButton_arx->setEnabled(true);
     });
 
 
@@ -130,12 +133,13 @@ void MainWindow::externalUIUpdate()
     ui->spinBox_interwal->setValue(uslugi.interwal.get());
 
     if (parameters_arx_window.isVisible())
-       parameters_arx_window.refreshFromService();
+       parameters_arx_window.updateUI();
 
     // BLOKOWANIE GUI ZALEŻNIE OD ROLI
     // Pobranie informacji o połączeniu z Warstwy Usług (poprzez NetService)
     bool isRegulator = uslugi.trybDzialania.get() == WarstaUslug::TrybDzialania::NET_REG;
     bool isObject = uslugi.trybDzialania.get() == WarstaUslug::TrybDzialania::NET_ARX;
+    bool isConnected = uslugi.netService.isAuthenticated();
 
     if (uslugi.trybDzialania.get() == WarstaUslug::TrybDzialania::LOCAL)
     {
@@ -160,13 +164,13 @@ void MainWindow::externalUIUpdate()
     ui->groupBox_wykresy->setEnabled(true);
     ui->groupBox_generator->setEnabled(isRegulator);
     ui->groupBox_filtr->setEnabled(isRegulator);
-    ui->pushButton_arx->setEnabled(isObject);
-    ui->pushButton_startStop->setEnabled(true);
-    ui->pushButton_reset->setEnabled(true);
+    ui->pushButton_startStop->setEnabled(isConnected);
+    ui->pushButton_reset->setEnabled(isConnected);
 }
 
 void MainWindow::chartsUpdate(UAR::Tick tick, WarstaUslug::Czas czas)
 {
+#ifdef DEBUG
     QString out = "Czas:" + QString::number(czas) + "ms";
     if(tick.pid.has_value())
         out += "  P:" + QString::number(tick.pid->P) + "  I:" + QString::number(tick.pid->I) + "  D:" + QString::number(tick.pid->D);
@@ -174,6 +178,12 @@ void MainWindow::chartsUpdate(UAR::Tick tick, WarstaUslug::Czas czas)
     out += "  REG:" + QString::number(tick.wartoscRegulowana);
     out += "  ZAD:" + QString::number(tick.wartoscZadana);
     qDebug() << out;
+    ui->label_rzeczytistyTick->setText( "Prawdziwy czas między tickami: " + QString::number(uslugi.measuredInterval.get()));
+    if(uslugi.measuredInterval.get() > uslugi.interwal.get()  + ((Plot*)ui->plot)->refreshInterval.get())
+    {
+        qDebug() << "Nie wyrabia kurła";
+    }
+#endif
     auto punkt = std::make_pair(tick, czas);
     pamiec_wykresow.appendLastValue(punkt);
     if(pamiec_wykresow.timeWidth() > oknoObserwacji.get())
@@ -182,8 +192,9 @@ void MainWindow::chartsUpdate(UAR::Tick tick, WarstaUslug::Czas czas)
             pamiec_wykresow.deleteFirstValue();
         pamiec_wykresow.deleteFirstValue();
     }
-    ui->plot->update();
     connection_window.setBufferFill(uslugi.getBufferFillPercentage());
+
+    ui->plot->update();
 }
 
 MainWindow::~MainWindow()
@@ -229,8 +240,9 @@ void MainWindow::on_radioButton_sinusoidalny_clicked()
 
 void MainWindow::on_pushButton_arx_clicked()
 {
-    parameters_arx_window.show();
+    parameters_arx_window.updateUI();
     ui->pushButton_arx->setEnabled(false);
+    parameters_arx_window.show();
 }
 
 

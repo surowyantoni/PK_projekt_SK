@@ -4,19 +4,13 @@
 #include <QDialog>
 #include <QLineEdit>
 #include <QVBoxLayout>
-#include <vector>
 #include "WarstwaUslug.h"
+#include "qspinbox.h"
 
 
 namespace Ui {
 class ParametryARXWindow;
 }
-
-struct Zakres
-{
-    double from;
-    double to;
-};
 
 class ParametryARXWindow : public QDialog
 {
@@ -25,33 +19,28 @@ class ParametryARXWindow : public QDialog
 public:
     explicit ParametryARXWindow(WarstaUslug& uslugi);
 
-    void addNewFieldVectorA(double value = 0.0);
-    void addNewFieldVectorB(double value = 0.0);
-    std::vector<double> readAllFieldsVectorA();
-    std::vector<double> readAllFieldsVectorB();
-    double readOpoznienie();
-    double readSzum();
-    Zakres readZakresSterowania();
-    Zakres readZakresRegulowania();
-    bool readCzyOpoznienie();
     ~ParametryARXWindow();
-    double readMax();
-    double readMin();
-    double readRegMax();
-    double readRegMin();
-
-    void refreshFromService();
-
+signals:
+    void closed();
+public:
+    void updateUI();
 private slots:
-    void on_addAreaVectorA_clicked();
+
+
+    void on_pushButton_addWspolczynnik_clicked();
 
     void on_buttonBox_accepted();
 
-private:
-    Ui::ParametryARXWindow *ui;
+    void on_buttonBox_rejected();
 
-    QVBoxLayout *dynamicLayoutVectorA;
-    QVBoxLayout *dynamicLayoutVectorB;
+private:
+    virtual void closeEvent(QCloseEvent* event) override;
+
+    QList<std::pair<QDoubleSpinBox*, QDoubleSpinBox*>> wspolczynniki;
+
+    void dodajPareWspolczynnikow(double a = 0.0, double b = 0.0);
+
+    Ui::ParametryARXWindow *ui;
 
     WarstaUslug& uslugi;
 };

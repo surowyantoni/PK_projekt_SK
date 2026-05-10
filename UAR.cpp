@@ -1,36 +1,19 @@
 #include "UAR.h"
 
-UAR::UAR(class ARX *ARX, GeneratorWartosci* gen, RegulatorPID *PID)
-    : ARX(ARX)
+
+UAR::UAR(class ARX *ARX, GeneratorWartosci* gen, RegulatorPID* pid, RegulatorOnOff *OnOff, RodzajSterowania rodzaj)
+    : regulator(rodzaj)
+    , ARX(ARX)
+    , PID(pid)
+    , OnOff(OnOff)
     , gen(gen)
     , poprzednieWyjscie(0.0)
-{
-    setPID(PID);
-}
+{}
 
-UAR::UAR(class ARX *ARX, GeneratorWartosci* gen, RegulatorOnOff *OnOff)
-    : ARX(ARX)
-    , gen(gen)
-    , poprzednieWyjscie(0.0)
-{
-    setOnOff(OnOff);
-}
-
-void UAR::setPID(RegulatorPID* PID)
-{
-    this->PID = PID;
-    OnOff = nullptr;
-}
-
-void UAR::setOnOff(RegulatorOnOff* OnOff)
-{
-    this->OnOff = OnOff;
-    PID = nullptr;
-}
 
 double UAR::symuluj(double wartoscZadana)
 {
-    switch (getWybranyRegulator())
+    switch (regulator)
     {
     case RodzajSterowania::PID:
         wartoscZadana = PID->symuluj(wartoscZadana - poprzednieWyjscie);
@@ -52,7 +35,7 @@ UAR::Tick UAR::symuluj(uint32_t interwal)
 
     tick.uchyb = wartoscZadana - poprzednieWyjscie;
 
-    switch (getWybranyRegulator())
+    switch (regulator)
     {
     case RodzajSterowania::PID:
         tick.pid = PID->symuluj(tick.uchyb);
@@ -84,7 +67,7 @@ UAR::Tick UAR::symulujBezObiektu(uint32_t interwal)
 
     tick.uchyb = tick.wartoscZadana - poprzednieWyjscie;
 
-    switch (getWybranyRegulator())
+    switch (regulator)
     {
     case RodzajSterowania::PID:
         tick.pid = PID->symuluj(tick.uchyb);
@@ -101,11 +84,3 @@ UAR::Tick UAR::symulujBezObiektu(uint32_t interwal)
     return tick;
 }
 
-UAR::RodzajSterowania UAR::getWybranyRegulator()
-{
-    if(PID != nullptr)
-        return UAR::RodzajSterowania::PID;
-    else if(OnOff != nullptr)
-        return UAR::RodzajSterowania::OnOff;
-    throw "Mamy problemik";
-}
