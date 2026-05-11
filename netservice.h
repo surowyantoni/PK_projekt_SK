@@ -25,6 +25,7 @@ public:
 signals:
     void logAppend(QString log);
     void deviceFound(QString ip);
+    void netError(QString errorMsg);
 
     void authChoiceQuestion();
 

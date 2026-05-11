@@ -2,10 +2,11 @@
 #include "qpainter.h"
 #include <QPainterPath>
 
-Plot::Plot(ListWithExtremes* lista, QWidget *parent)
+Plot::Plot(ListWithExtremes* lista, WarstaUslug::Czas const * const oknoObserwacji, QWidget *parent)
     : QWidget{parent}
     , lista{lista}
     , refreshTimer{QTimer()}
+    , oknoObserwacji{oknoObserwacji}
 {
     if constexpr (!CONSTS::PLOTS::UPDATE_ON_TICK)
     {
@@ -149,7 +150,7 @@ void Plot::paintEvent(QPaintEvent *event)
     //Opisy serii
     p.drawText(ramka_zadana_i_reg.center().x(), ramka_zadana_i_reg.top() - (ODSTEPY_PX / 4), "Czas [s]");
 
-    p.setFont(QFont("Soege UI", 12, 600));
+    p.setFont(QFont("Soege UI", 10, 600));
     p.setPen(QPen(QBrush(COLOR_ZADANA), SZEROKOSC_PEDZLA_DLA_TEKSTU_OPISU_SERII));
     p.drawText(ramka_zadana_i_reg.topRight() + QPoint(-SZEROKOSC_TEKSTU_OPISU_SERII_PX, ODSTEPY_PX * 2 ), "Wartość zadana");
     p.setPen(QPen(QBrush(COLOR_REGULOWANA), SZEROKOSC_PEDZLA_DLA_TEKSTU_OPISU_SERII));
@@ -218,12 +219,26 @@ void Plot::paintEvent(QPaintEvent *event)
     }
 
 
+
+
+    //Rysowanie czasu
+    p.setPen(GRUBY_PEN);
+    for (uint32_t sekunda = punkt->second / 1000 + 1; sekunda <= lista->lista.begin()->second / 1000; ++sekunda)
+    {
+        QPoint spot(mapValue(lista->CzasMin(), lista->CzasMax(), ramka_zadana_i_reg.left(), ramka_zadana_i_reg.right(), sekunda * 1000), ramka_pid.bottom() + SZEROKOSC_LINII);
+        p.drawLine(spot, spot + PODZIALKA_X);
+        p.drawText(spot + QPoint(3, OFFSET_LEFT_BRZEGOWE / 3 * 2), QString::number(sekunda));
+    }
+
+
     // UNDERSAMPLING
-    size_t step = lista->howManyPoints() / 2000;
+    size_t step = lista->howManyPoints() / CONSTS::PLOTS::WSPOLCZYNNIK_OPTYALIZACJIL;
     if(step == 0)
         step = 1;
-    qDebug() << step;
 
+#ifdef DEBUG
+    qDebug() << "Rysuję co " << step << " punktów";
+#endif // DEBUG
 
     for (size_t idx = step; idx < lista->howManyPoints() - 1; idx += step)
     {
@@ -241,16 +256,6 @@ void Plot::paintEvent(QPaintEvent *event)
             pid_P = QPoint(czas_on_plot, mapValue(MIN_PID, MAX_PID, ramka_pid.bottom()-MARGINES_WYKRESOW, ramka_pid.top()+MARGINES_WYKRESOW, punkt->first.pid->P));
             pid_I = QPoint(czas_on_plot, mapValue(MIN_PID, MAX_PID, ramka_pid.bottom()-MARGINES_WYKRESOW, ramka_pid.top()+MARGINES_WYKRESOW, punkt->first.pid->I));
             pid_D = QPoint(czas_on_plot, mapValue(MIN_PID, MAX_PID, ramka_pid.bottom()-MARGINES_WYKRESOW, ramka_pid.top()+MARGINES_WYKRESOW, punkt->first.pid->D));
-        }
-
-        //Rysowanie czasu
-        if(last_czas / 1000 != punkt->second / 1000)
-        {
-            const unsigned int sekunda = punkt->second / 1000;
-            p.setPen(GRUBY_PEN);
-            QPoint spot(czas_on_plot, RAMKI[3]->bottom());
-            p.drawLine(spot, spot + PODZIALKA_X);
-            p.drawText(spot + QPoint(3, OFFSET_LEFT_BRZEGOWE / 3 * 2), QString::number(sekunda, 10, 0) + " s");
         }
 
         pathSterowanie.lineTo(sterowanie);
@@ -279,7 +284,7 @@ void Plot::paintEvent(QPaintEvent *event)
         // last_regulowana = regulowana;
         // last_zadana = zadana;
         last_pid = punkt->first.pid.has_value();
-        last_czas = punkt->second;
+        // last_czas = punkt->second;
 
         std::advance(punkt, step);
     }

@@ -1,5 +1,5 @@
 #include "WarstwaUslug.h"
-
+#include <QMessageBox>
 
 
 
@@ -51,6 +51,7 @@ void WarstaUslug::symuluj()
     {
     case TrybDzialania::LOCAL:
         emit updateCharts(uar.symuluj(interwal.get()), czas);
+        emit symulacjaWyrabiaSie(measuredInterval.get() < interwal.get() + CONSTS::GUI::MAX_RUN_LAG_BEFRE_MARKING_RED);
         break;
     case TrybDzialania::NET_REG:
         ticki_do_uzupelnienia.push(uar.symulujBezObiektu(interwal.get()));
@@ -89,6 +90,25 @@ void WarstaUslug::sampleReceivedFromARXObjectNowIHaveToBuildTheTickAndSendItToPl
     ticki_do_uzupelnienia.pop();
     tick.wartoscRegulowana = sample.wartoscRegulowana;
     uar.zaktualizujPoprzendieWyjscie(sample.wartoscRegulowana);
+    int fill_percentage = getBufferFillPercentage();
+    if(fill_percentage > 90)
+    {
+        if(interwal.get() == CONSTS::GUI::UAR::interwal_max)
+        {
+            // za szybko, rołącz i przerwij
+            netService.disconnect();
+            emit netService.netError("Nie da się przesyłać próbek symulacji w takiej wolnej sieci!");
+        }
+        else
+        {
+            emit symulacjaWyrabiaSie(false);
+            interwal.set(interwal.get() + CONSTS::GUI::UAR::interwal_step * CONSTS::NET::SIMMULATION_INTERVAL_STEP_MULTIPLIER_WHEN_SIMMULAION_IS_TOO_FAST);
+        }
+    } else if(fill_percentage < 10)
+    {
+        emit symulacjaWyrabiaSie(true);
+    }
+
     emit updateCharts(tick, czas);
 }
 

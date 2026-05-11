@@ -30,6 +30,8 @@ private slots:
     void onAuthError();//Reakcja na zły kod
     void onCodeEntry();      //Prośba o podanie kodu
     void onDeviceFound(QString ip);  //Wpisanie znalezionychdo comboBox
+    void onNetwokrError(QString errorMessage);
+
     void on_radioLokalny_clicked();
 
     void on_radioServer_clicked();

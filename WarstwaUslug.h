@@ -50,7 +50,8 @@ public:
         {
             QDataStream s(&data, QIODevice::ReadOnly);
             uint32_t interwal; s >> interwal;
-            set(interwal);
+            owner->timer.setInterval(interwal);
+            this->value = interwal;
         }
         QByteArray toByteArray() const
         {
@@ -174,6 +175,8 @@ public slots:
 signals:
     void updateCharts(UAR::Tick tick, Czas czas);
     void updateUI();
+
+    void symulacjaWyrabiaSie(bool wyrabia);
 
 private:
 

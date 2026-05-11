@@ -15,7 +15,8 @@ namespace CONSTS
     namespace PLOTS
     {
         constexpr bool UPDATE_ON_TICK = false;
-        constexpr unsigned int UPDATE_INTERVAL = 1000;
+        constexpr unsigned int UPDATE_INTERVAL = 16;
+        constexpr unsigned int WSPOLCZYNNIK_OPTYALIZACJIL = 800; // jak przekroczytmy tyle próbek, to rysujemy co 2, jak przekroczymy 2x tyle to co 3 etc.
     }
     namespace NET
     {
@@ -23,6 +24,7 @@ namespace CONSTS
         constexpr int MAX_AUTH_ATTEMPTS = 3;
         constexpr int MAX_SAMPLES_LAG = 10;
         constexpr unsigned int STATS_UPDATE_INTERVAL = 1000;
+        constexpr unsigned int SIMMULATION_INTERVAL_STEP_MULTIPLIER_WHEN_SIMMULAION_IS_TOO_FAST = 1;
 
     }
     namespace ARX
@@ -154,6 +156,8 @@ namespace CONSTS
             constexpr double histereza_max =  10.0;
             constexpr double histereza_step=  0.05;
         }
+        constexpr unsigned int MAX_RUN_LAG_BEFRE_MARKING_RED = CONSTS::GUI::UAR::interwal_step * 2;
+
     }
 }
 #endif // DEFINITIONS_HPP

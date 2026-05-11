@@ -16,6 +16,12 @@ MainWindow::MainWindow(QWidget *parent)
     externalUIUpdate();
     QObject::connect(&uslugi, &WarstaUslug::updateCharts, this, &MainWindow::chartsUpdate);
     QObject::connect(&uslugi, &WarstaUslug::updateUI, this, &MainWindow::externalUIUpdate);
+    QObject::connect(&uslugi, &WarstaUslug::symulacjaWyrabiaSie, this, [this](bool wyrabia_sie){
+        if(wyrabia_sie)
+            ui->spinBox_interwal->setStyleSheet("");
+        else
+            ui->spinBox_interwal->setStyleSheet("background-color: red; color: white;");
+    });
     QObject::connect(&uslugi.netService, &NetService::simmulationRestart, this, [this](){
         uslugi.reset();
         pamiec_wykresow.clear();
@@ -27,7 +33,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Podmieniamy widget na własną klase Plot
     ui->plot->deleteLater();
-    ui->plot = new Plot(&pamiec_wykresow, this);
+    ui->plot = new Plot(&pamiec_wykresow, &this->oknoObserwacji.value, this);
     ui->verticalLayout_plot->addWidget(ui->plot);
     ui->plot->update();
 
@@ -189,13 +195,11 @@ void MainWindow::chartsUpdate(UAR::Tick tick, WarstaUslug::Czas czas)
 #endif
     auto punkt = std::make_pair(tick, czas);
     pamiec_wykresow.appendLastValue(punkt);
-    if(pamiec_wykresow.timeWidth() > oknoObserwacji.get())
+    while(pamiec_wykresow.timeWidth() > oknoObserwacji.get())
     {
-        if(pamiec_wykresow.timeWidth() > oknoObserwacji.get())
-            pamiec_wykresow.deleteFirstValue();
         pamiec_wykresow.deleteFirstValue();
     }
-    if constexpr (!CONSTS::PLOTS::UPDATE_ON_TICK)
+    if constexpr (CONSTS::PLOTS::UPDATE_ON_TICK)
     {
         ui->plot->update();
     }

@@ -19,6 +19,7 @@ ConnectionWindow::ConnectionWindow(WarstaUslug& uslugi_i, QWidget *parent)
     QObject::connect(&statsTimer, &QTimer::timeout, this, [this](){
         ui->labelPacketsReceived->setText("RX: " + QString::number(uslugi.netService.getReceived()));
         ui->labelPacketsSent->setText("TX: " + QString::number(uslugi.netService.getTansmited()));
+        ui->progressBarOpoznienie->setValue(uslugi.getBufferFillPercentage());
     });
 
 
@@ -32,6 +33,7 @@ ConnectionWindow::ConnectionWindow(WarstaUslug& uslugi_i, QWidget *parent)
     connect(&uslugi.netService, &NetService::authChoiceQuestion, this, &ConnectionWindow::onAuthChoiceRequired);
     connect(&uslugi.netService, &NetService::authErrorReceived, this, &ConnectionWindow::onAuthError);
     connect(&uslugi.netService, &NetService::authCodeEntryRequired, this, &ConnectionWindow::onCodeEntry);
+    connect(&uslugi.netService, &NetService::netError, this, &ConnectionWindow::onNetwokrError);
     connect(&uslugi, &WarstaUslug::updateUI, this, &ConnectionWindow::updateUI);
 
     connect(ui->spinBox_ip1,  &QSpinBox::textChanged, this, [this](QString t){ if (t.length() == 3) ui->spinBox_ip2->setFocus(); });
@@ -70,6 +72,11 @@ void ConnectionWindow::changeEvent(QEvent *event)
     }
 
     QDialog::changeEvent(event);
+}
+
+void ConnectionWindow::onNetwokrError(QString errorMessage)
+{
+    QMessageBox::critical(this, "Błąd sieci", errorMessage);
 }
 
 void ConnectionWindow::closeEvent(QCloseEvent *event)
@@ -183,6 +190,7 @@ void ConnectionWindow::updateUI()
     ui->spinBox_port->setEnabled(tryb_sieciowy);
     ui->lineEdit_wiadomosc->setEnabled(tryb_sieciowy);
     ui->combo_znalezione->setEnabled(tryb_arx);
+    ui->progressBarOpoznienie->setEnabled(tryb_sieciowy && !tryb_arx);
 }
 
 void ConnectionWindow::onAuthChoiceRequired()
