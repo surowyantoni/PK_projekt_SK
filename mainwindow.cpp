@@ -106,6 +106,7 @@ void MainWindow::externalUIUpdate()
     const QSignalBlocker bMax(ui->spinBox_sterowanieMax);
     const QSignalBlocker bHyst(ui->spinBox_szerokoscHisterezy);
     const QSignalBlocker bOnOffU(ui->spinBox_wartoscSterowaniaON);
+    const QSignalBlocker bInter(ui->spinBox_interwal);
 
 
     ui->pushButton_startStop->setText(uslugi.dziala.get() ? "STOP" : "START");

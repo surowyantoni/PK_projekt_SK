@@ -313,7 +313,6 @@ void NetService::processDataPackage(QByteArray data)
         case CONFIG_INTERVAL:
             disconnectIfNotAuthenticated();
             uslugi->interwal.fromByteArray(dane_pakietu);
-            emit uslugi->updateUI();
             break;
 
         case SIM_SAMPLE_FROM_OBJECT:
