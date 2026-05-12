@@ -2,6 +2,7 @@
 #include "connectionwindow.h"
 #include "parametryarxwindow.h"
 #include "plot.hpp"
+#include "qevent.h"
 #include "ui_mainwindow.h"
 
 MainWindow::MainWindow(QWidget *parent)
@@ -177,6 +178,27 @@ void MainWindow::externalUIUpdate()
     ui->pushButton_reset->setEnabled(isConnected);
 }
 
+void MainWindow::resizeEvent(QResizeEvent * event)
+{
+    QString etykiety_gupboxow[] = {"PID", "OnOff", "Regulacja",
+                                   "Wykresy", "Filtrowanie Sterowania",
+                                   "Generator Wartości Zadanej"};
+    if(event->size().height() < 750)
+    {
+        for(auto& el : etykiety_gupboxow)
+            el = "";
+#ifdef DEBUG
+        qDebug() << "MALE OKNO" << event->size();
+#endif // DEBUG
+    }
+    ui->groupBox_pid->setTitle(etykiety_gupboxow[0]);
+    ui->groupBox_onoff->setTitle(etykiety_gupboxow[1]);
+    ui->groupBox_regulacja->setTitle(etykiety_gupboxow[2]);
+    ui->groupBox_wykresy->setTitle(etykiety_gupboxow[3]);
+    ui->groupBox_filtr->setTitle(etykiety_gupboxow[4]);
+    ui->groupBox_generator->setTitle(etykiety_gupboxow[5]);
+}
+
 void MainWindow::chartsUpdate(UAR::Tick tick, WarstaUslug::Czas czas)
 {
 #ifdef DEBUG
@@ -190,7 +212,7 @@ void MainWindow::chartsUpdate(UAR::Tick tick, WarstaUslug::Czas czas)
     ui->label_rzeczytistyTick->setText( "Prawdziwy czas między tickami: " + QString::number(uslugi.measuredInterval.get()));
     if(uslugi.measuredInterval.get() > uslugi.interwal.get()  + ((Plot*)ui->plot)->refreshInterval.get())
     {
-        qDebug() << "Nie wyrabia kurła";
+        qDebug() << "Nie wyrabia :(";
     }
 #endif
     auto punkt = std::make_pair(tick, czas);
@@ -277,6 +299,11 @@ void MainWindow::on_actionPolacz_triggered()
     connection_window.show();
     connection_window.raise();
     connection_window.activateWindow();
+}
+
+void MainWindow::on_actionRysuj_linie_czasu_triggered()
+{
+    static_cast<Plot*>(ui->plot)->siatka.set(ui->actionRysuj_linie_czasu->isChecked());
 }
 
 void MainWindow::on_horizontalSlider_wypelnienie_valueChanged(int value)

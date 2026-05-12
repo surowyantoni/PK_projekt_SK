@@ -18,6 +18,8 @@ QT_END_NAMESPACE
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
+protected:
+    virtual void resizeEvent(QResizeEvent * event) override;
 
 public:
     MainWindow(QWidget *parent = nullptr);
@@ -58,6 +60,8 @@ private slots:
     void on_checkBox_nasycenie_clicked();
 
     void on_actionPolacz_triggered();
+
+    void on_actionRysuj_linie_czasu_triggered();
 
     void on_horizontalSlider_wypelnienie_valueChanged(int value);
 

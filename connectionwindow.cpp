@@ -191,6 +191,9 @@ void ConnectionWindow::updateUI()
     ui->lineEdit_wiadomosc->setEnabled(tryb_sieciowy);
     ui->combo_znalezione->setEnabled(tryb_arx);
     ui->progressBarOpoznienie->setEnabled(tryb_sieciowy && !tryb_arx);
+    ui->radioLokalny->setChecked(!tryb_sieciowy);
+    ui->radioClient->setChecked(tryb_sieciowy && tryb_arx);
+    ui->radioServer->setChecked(tryb_sieciowy && !tryb_arx);
 }
 
 void ConnectionWindow::onAuthChoiceRequired()

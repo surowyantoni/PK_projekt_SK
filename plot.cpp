@@ -2,8 +2,9 @@
 #include "qpainter.h"
 #include <QPainterPath>
 
-Plot::Plot(ListWithExtremes* lista, WarstaUslug::Czas const * const oknoObserwacji, QWidget *parent)
+Plot::Plot(ListWithExtremes* lista, WarstaUslug::Czas const * const oknoObserwacji, bool linieCzasu, QWidget *parent)
     : QWidget{parent}
+    , siatka(linieCzasu)
     , lista{lista}
     , refreshTimer{QTimer()}
     , oknoObserwacji{oknoObserwacji}
@@ -60,6 +61,7 @@ void Plot::paintEvent(QPaintEvent *event)
     static const QPoint PODZIALKA_Y = QPoint(- OFFSET_LEFT_BRZEGOWE / 2, 0);
     static const QPoint PODZIALKA_X = QPoint(0, OFFSET_LEFT_BRZEGOWE / 2);
     static const QPen GRUBY_PEN = QPen(Qt::BrushStyle::SolidPattern, 2);
+    static const QPen CIENKI_PEN = QPen(Qt::BrushStyle::Dense1Pattern, 1);
     constexpr qreal SZEROKOSC_PEDZLA_DLA_TEKSTU_OPISU_SERII = 1.0;
     constexpr int SZEROKOSC_TEKSTU_OPISU_SERII_PX = 200;
 
@@ -150,7 +152,7 @@ void Plot::paintEvent(QPaintEvent *event)
     //Opisy serii
     p.drawText(ramka_zadana_i_reg.center().x(), ramka_zadana_i_reg.top() - (ODSTEPY_PX / 4), "Czas [s]");
 
-    p.setFont(QFont("Soege UI", 10, 600));
+    p.setFont(QFont("Soege UI", 9, 600));
     p.setPen(QPen(QBrush(COLOR_ZADANA), SZEROKOSC_PEDZLA_DLA_TEKSTU_OPISU_SERII));
     p.drawText(ramka_zadana_i_reg.topRight() + QPoint(-SZEROKOSC_TEKSTU_OPISU_SERII_PX, ODSTEPY_PX * 2 ), "Wartość zadana");
     p.setPen(QPen(QBrush(COLOR_REGULOWANA), SZEROKOSC_PEDZLA_DLA_TEKSTU_OPISU_SERII));
@@ -222,13 +224,23 @@ void Plot::paintEvent(QPaintEvent *event)
 
 
     //Rysowanie czasu
-    p.setPen(GRUBY_PEN);
     for (uint32_t sekunda = punkt->second / 1000 + 1; sekunda <= lista->lista.begin()->second / 1000; ++sekunda)
     {
         QPoint spot(mapValue(lista->CzasMin(), lista->CzasMax(), ramka_zadana_i_reg.left(), ramka_zadana_i_reg.right(), sekunda * 1000), ramka_pid.bottom() + SZEROKOSC_LINII);
         p.drawLine(spot, spot + PODZIALKA_X);
         p.drawText(spot + QPoint(3, OFFSET_LEFT_BRZEGOWE / 3 * 2), QString::number(sekunda));
+
+        if(siatka.get())
+        {
+            p.setPen(CIENKI_PEN);
+            for (int idx = 0; idx < 4; ++idx)
+            {
+                p.drawLine(QPoint(spot.x(), RAMKI[idx]->bottom()), QPoint(spot.x(), RAMKI[idx]->top()));
+            }
+            p.setPen(GRUBY_PEN);
+        }
     }
+
 
 
     // UNDERSAMPLING

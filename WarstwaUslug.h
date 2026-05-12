@@ -45,6 +45,7 @@ public:
             this->value = value;
             if(owner->trybDzialania.get() != WarstaUslug::TrybDzialania::LOCAL)
                 owner->netService.sendIntervalConfig();
+            emit owner->updateUI();
         }
         void fromByteArray(QByteArray data)
         {
@@ -52,6 +53,7 @@ public:
             uint32_t interwal; s >> interwal;
             owner->timer.setInterval(interwal);
             this->value = interwal;
+            emit owner->updateUI();
         }
         QByteArray toByteArray() const
         {
