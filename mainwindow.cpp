@@ -4,6 +4,9 @@
 #include "plot.hpp"
 #include "qevent.h"
 #include "ui_mainwindow.h"
+#include <QFileDialog>
+#include <QDir>
+#include <QMessageBox>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -34,7 +37,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Podmieniamy widget na własną klase Plot
     ui->plot->deleteLater();
-    ui->plot = new Plot(&pamiec_wykresow, &this->oknoObserwacji.value, this);
+    ui->plot = new Plot(&pamiec_wykresow, &this->oknoObserwacji.value, true, this);
     ui->verticalLayout_plot->addWidget(ui->plot);
     ui->plot->update();
 
@@ -307,6 +310,43 @@ void MainWindow::on_actionRysuj_linie_czasu_triggered()
     static_cast<Plot*>(ui->plot)->siatka.set(ui->actionRysuj_linie_czasu->isChecked());
 }
 
+void MainWindow::on_actionOtworz_triggered()
+{
+    QString fileName = "";
+    while(fileName.isEmpty())
+    {
+        fileName = QFileDialog::getOpenFileName(
+        this,
+        "Otwórz plik JSON z konfiguracją",
+        QDir::homePath(),
+        "JSON Files (*.json);;All Files (*)");
+    }
+    if(uslugi.wczytajZPliku(fileName))
+    {
+        QMessageBox::information(this, "Pomyślnie wczytano konfigurację", "Udało się wczytać konfigurację z pliku JSON");
+    }
+    else
+    {
+        QMessageBox::warning(this, "Błąd", "Nie udało się wczytać konfiguracji z pliku JSON, konfiguracja symulacji nie uległa zmianie");
+    }
+}
+
+void MainWindow::on_actionZapisz_triggered()
+{
+    QString fileName = "";
+    while(fileName.isEmpty())
+    {
+        fileName = QFileDialog::getSaveFileName(
+            this,
+            "Gdzie zapisać plik JSON z konfiguracją",
+            QDir::homePath(),
+            "JSON Files (*.json);;All Files (*)");
+    }
+    uslugi.zapiszDoPliku(fileName);
+    QMessageBox::information(this, "Pomyślnie zapisano konfigurację", "Udało się zapisać konfigurację do pliku JSON");
+}
+
+
 void MainWindow::on_horizontalSlider_wypelnienie_valueChanged(int value)
 {
     ui->spinBox_wypelnienie->setValue((double)value / ui->horizontalSlider_wypelnienie->maximum());
@@ -402,6 +442,6 @@ void MainWindow::on_spinBox_sterowanieMin_editingFinished()
 
 void MainWindow::on_spinBox_sterowanieMax_editingFinished()
 {
-     uslugi.pidChange().instancja->limityWyjscia.setMax(ui->spinBox_sterowanieMax->value());
+    uslugi.pidChange().instancja->limityWyjscia.setMax(ui->spinBox_sterowanieMax->value());
 }
 

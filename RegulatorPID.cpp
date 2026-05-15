@@ -130,6 +130,7 @@ void RegulatorPID::fromByteArray(QByteArray& data)
     QDataStream s(&data, QIODevice::ReadOnly);
     double limMax, limMin;
     bool lim;
-    s >> k.value >> Ti.value >> Td.value >> sposobLiczeniaCalki.value >> limMin >> limMax >> lim >> antiWindupActive.value;
+    s >> k.value >> Ti.value >> Td.value >> sposobLiczeniaCalki.value
+        >> limMin >> limMax >> lim >> antiWindupActive.value;
     limityWyjscia = MinMaxClamp(limMin, limMax, lim);
 }

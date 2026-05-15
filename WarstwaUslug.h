@@ -167,10 +167,10 @@ public:
     RegulatorPID pid;
     RegulatorOnOff onOff;
     GeneratorWartosci generator;
+    bool wczytajZPliku(QString plik);
+    void zapiszDoPliku(QString plik);
 
 public slots:
-    void wczytajZPliku();
-    void zapiszDoPliku();
     void sampleReceivedFromREgulatorInstanceNowINeedToForewardItToTheUARAndThenSimmulateARXReactionAndSensTheSignalBack(SimSampleFromRegulator sample); // Nazywanie funkcji to moja pasja
     void sampleReceivedFromARXObjectNowIHaveToBuildTheTickAndSendItToPlotsToUpdateThem(SimSampleFromObject sample);
 

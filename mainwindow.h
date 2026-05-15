@@ -95,6 +95,10 @@ private slots:
 
     void on_spinBox_sterowanieMax_editingFinished();
 
+    void on_actionOtworz_triggered();
+
+    void on_actionZapisz_triggered();
+
 private:
     Ui::MainWindow *ui;
     WarstaUslug uslugi;

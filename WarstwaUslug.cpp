@@ -1,6 +1,7 @@
 #include "WarstwaUslug.h"
+#include "qdir.h"
 #include <QMessageBox>
-
+#include <QJsonDocument>
 
 
 WarstaUslug::WarstaUslug()
@@ -63,7 +64,6 @@ void WarstaUslug::symuluj()
     case TrybDzialania::NET_ARX:
         timer.stop();
         czas -= interwal.get();
-        // throw "WATAFQ"; // Nacisnales przycisk zmiany trybu na ARX, przy włączonej symulacji xD
         break;
     }
 }
@@ -113,12 +113,40 @@ void WarstaUslug::sampleReceivedFromARXObjectNowIHaveToBuildTheTickAndSendItToPl
 }
 
 
-void WarstaUslug::wczytajZPliku()
+bool WarstaUslug::wczytajZPliku(QString plik)
 {
     //TODO
+    QFile file(plik);
+    try
+    {
+        if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+            throw 1;
+
+        QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
+        QJsonObject root = doc.object();
+
+        QJsonObject arx_obj = root["arx"].toObject();
+        arx.fromJSON(arx_obj);
+    }
+    catch (...)
+    {
+        return false;
+    }
+    file.close();
     emit updateUI();
+    return true;
 }
-void WarstaUslug::zapiszDoPliku()
+void WarstaUslug::zapiszDoPliku(QString plik)
 {
     //TODO
+    QFile file(plik);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
+        throw 1;
+
+    QJsonObject root = QJsonObject();
+    root["arx"] = arx.toJSON();
+
+    QJsonDocument doc = QJsonDocument(root);
+    file.write(doc.toJson());
+    file.close();
 }

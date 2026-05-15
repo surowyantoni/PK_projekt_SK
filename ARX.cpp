@@ -74,26 +74,40 @@ void ARX::aktualizacjaBuforowPoZmianieOpoznienia()
 
 QJsonObject ARX::toJSON() const
 {
-    return QJsonObject();
+    QJsonObject arx;
+    arx["k"] = k.get();
+    arx["z"] = z.get();
+    return arx;
 }
 void ARX::fromJSON(QJsonObject& json)
 {
-
+    k.set(json["k"].toInt());
+    z.set(json["z"].toDouble());
 }
 QByteArray ARX::toByteArray() const
 {
     QByteArray data;
     QDataStream s(&data, QIODevice::WriteOnly);
     QByteArray wspolczynniki_arr = wspolczynniki.toByteArray();
-    s << k.get() << z.get() << wspolczynniki_arr;
+    s << k.get() << z.get() << wspolczynniki_arr
+      << limityRegulowana.getMax() << limityRegulowana.getMin() << limityRegulowana.getActive()
+      << limityZadana.getMax() << limityZadana.getMin() << limityZadana.getActive();
     return data;
 }
 void ARX::fromByteArray(QByteArray& data)
 {
     QDataStream s(&data, QIODevice::ReadOnly);
     QByteArray wspolczynniki_arr;
-    s >> k.value >> z.value >> wspolczynniki_arr;
+    double reg_min, reg_max, zad_min, zad_max;
+    bool reg_active, zad_active;
+    s >> k.value >> z.value >> wspolczynniki_arr
+        >> reg_max >> reg_min >> reg_active
+        >> zad_max >> zad_min >> zad_active;
     wspolczynniki.fromByteArray(wspolczynniki_arr);
     aktualizacjaBuforowPoZmianieOpoznienia();
+    limityRegulowana.setMinMax(reg_min, reg_max);
+    limityZadana.setMinMax(zad_min, zad_max);
+    limityRegulowana.setActive(reg_active);
+    limityZadana.setActive(zad_active);
 }
 
