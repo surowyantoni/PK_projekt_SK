@@ -41,7 +41,7 @@ ParametryARXWindow::ParametryARXWindow(WarstaUslug& uslugi)
 
 void ParametryARXWindow::closeEvent(QCloseEvent* event)
 {
-    emit this->hide();
+    this->hide();
 }
 
 void ParametryARXWindow::updateUI()
@@ -69,7 +69,8 @@ void ParametryARXWindow::updateUI()
     ui->spinBox_wejscieMin->setValue(uslugi.arx.limityZadana.getMin());
     ui->checkBoxOgraniczeniaWejscia->setChecked(uslugi.arx.limityZadana.getActive());
 
-    bool editable = uslugi.trybDzialania.get() != WarstaUslug::TrybDzialania::NET_REG;
+    bool editable = !uslugi.trybDzialania.isSimmulationRegulator();
+
     for(auto& wspolczynnik : wspolczynniki)
     {
         wspolczynnik.first->setEnabled(editable);
@@ -116,22 +117,16 @@ void ParametryARXWindow::on_buttonBox_accepted()
     }
     vec.resize(vec.size() - to_remove);
 
-
-    uslugi.arx.wspolczynniki.value = vec;
-    uslugi.arx.k.set(ui->spinBox_opoznienie->value());
-    uslugi.arx.z.set(ui->spinBox_zaklocenie->value());
-
-    uslugi.arx.limityRegulowana.setMax(ui->spinBox_wyjscieMax->value());
-    uslugi.arx.limityRegulowana.setMin(ui->spinBox_wyjscieMin->value());
-    uslugi.arx.limityRegulowana.setActive(ui->checkBoxOgraniczeniaWyjscia->isChecked());
-    uslugi.arx.limityZadana.setMax(ui->spinBox_wejscieMax->value());
-    uslugi.arx.limityZadana.setMin(ui->spinBox_wejscieMin->value());
-    uslugi.arx.limityZadana.setActive(ui->checkBoxOgraniczeniaWejscia->isChecked());
-
-    if(uslugi.trybDzialania.get() != WarstaUslug::TrybDzialania::LOCAL)
-        uslugi.netService.sendArxConfig();
-
-    emit uslugi.updateUI();
+    auto arx = uslugi.arxChange();
+    arx.instancja->wspolczynniki.value = vec;
+    arx.instancja->k.set(ui->spinBox_opoznienie->value());
+    arx.instancja->z.set(ui->spinBox_zaklocenie->value());
+    arx.instancja->limityRegulowana.setMax(ui->spinBox_wyjscieMax->value());
+    arx.instancja->limityRegulowana.setMin(ui->spinBox_wyjscieMin->value());
+    arx.instancja->limityRegulowana.setActive(ui->checkBoxOgraniczeniaWyjscia->isChecked());
+    arx.instancja->limityZadana.setMax(ui->spinBox_wejscieMax->value());
+    arx.instancja->limityZadana.setMin(ui->spinBox_wejscieMin->value());
+    arx.instancja->limityZadana.setActive(ui->checkBoxOgraniczeniaWejscia->isChecked());
 }
 
 void ParametryARXWindow::on_pushButton_addWspolczynnik_clicked()

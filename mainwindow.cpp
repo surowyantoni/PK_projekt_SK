@@ -151,11 +151,10 @@ void MainWindow::externalUIUpdate()
 
     // BLOKOWANIE GUI ZALEŻNIE OD ROLI
     // Pobranie informacji o połączeniu z Warstwy Usług (poprzez NetService)
-    bool isRegulator = uslugi.trybDzialania.get() == WarstaUslug::TrybDzialania::NET_REG;
-    bool isObject = uslugi.trybDzialania.get() == WarstaUslug::TrybDzialania::NET_ARX;
-    bool isConnected = uslugi.netService.isAuthenticated();
+    bool isRegulator = uslugi.trybDzialania.isSimmulationRegulator();
+    bool isConnected = uslugi.authenticated.get();
 
-    if (uslugi.trybDzialania.get() == WarstaUslug::TrybDzialania::LOCAL)
+    if (uslugi.trybDzialania.isLocal())
     {
         // TRYB STACJONARNY: Wszystko odblokowane
         ui->groupBox_pid->setEnabled(true);
@@ -191,9 +190,6 @@ void MainWindow::resizeEvent(QResizeEvent * event)
     {
         for(auto& el : etykiety_gupboxow)
             el = "";
-#ifdef DEBUG
-        qDebug() << "MALE OKNO" << event->size();
-#endif // DEBUG
     }
     ui->groupBox_pid->setTitle(etykiety_gupboxow[0]);
     ui->groupBox_onoff->setTitle(etykiety_gupboxow[1]);
@@ -316,18 +312,18 @@ void MainWindow::on_actionOtworz_triggered()
     while(fileName.isEmpty())
     {
         fileName = QFileDialog::getOpenFileName(
-        this,
+        (QWidget*)this,
         "Otwórz plik JSON z konfiguracją",
         QDir::homePath(),
         "JSON Files (*.json);;All Files (*)");
     }
     if(uslugi.wczytajZPliku(fileName))
     {
-        QMessageBox::information(this, "Pomyślnie wczytano konfigurację", "Udało się wczytać konfigurację z pliku JSON");
+        QMessageBox::information((QWidget*)this, "Pomyślnie wczytano konfigurację", "Udało się wczytać konfigurację z pliku JSON");
     }
     else
     {
-        QMessageBox::warning(this, "Błąd", "Nie udało się wczytać konfiguracji z pliku JSON, konfiguracja symulacji nie uległa zmianie");
+        QMessageBox::warning((QWidget*)this, "Błąd", "Nie udało się wczytać konfiguracji z pliku JSON, konfiguracja symulacji nie uległa zmianie");
     }
 }
 
@@ -337,13 +333,13 @@ void MainWindow::on_actionZapisz_triggered()
     while(fileName.isEmpty())
     {
         fileName = QFileDialog::getSaveFileName(
-            this,
+            (QWidget*)this,
             "Gdzie zapisać plik JSON z konfiguracją",
             QDir::homePath(),
             "JSON Files (*.json);;All Files (*)");
     }
     uslugi.zapiszDoPliku(fileName);
-    QMessageBox::information(this, "Pomyślnie zapisano konfigurację", "Udało się zapisać konfigurację do pliku JSON");
+    QMessageBox::information((QWidget*)this, "Pomyślnie zapisano konfigurację", "Udało się zapisać konfigurację do pliku JSON");
 }
 
 

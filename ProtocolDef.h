@@ -23,8 +23,7 @@ enum ProtocolActions
     SIM_SAMPLE_FROM_OBJECT,         // Próbki odebrane od obiektu
     SIM_SAMPLE_FROM_REGULATOR,      // Próbki odebrane od regulatora
     SIM_RESTART,
-    SIM_START,
-    SIM_STOP,
+    SIM_RUNNING,            // true lub false
 };
 
 #pragma pack(push, 1)
@@ -32,20 +31,20 @@ struct SimSampleFromRegulator
 {
     double wartoscZadana; // Wyjscie z generatora
     double sterowanie;    // Wyjście z regulatora
-
+    uint32_t czas;
 
     static SimSampleFromRegulator fromByteArray(QByteArray data)
     {
         SimSampleFromRegulator sample;
         QDataStream s(&data, QIODevice::ReadOnly);
-        s >> sample.wartoscZadana >> sample.sterowanie;
+        s >> sample.wartoscZadana >> sample.sterowanie >> sample.czas;
         return sample;
     }
     QByteArray toByteArray() const
     {
         QByteArray data;
         QDataStream s(&data, QIODevice::WriteOnly);
-        s << wartoscZadana << sterowanie;
+        s << wartoscZadana << sterowanie << czas;
         return data;
     }
 };
@@ -55,19 +54,20 @@ struct SimSampleFromRegulator
 struct SimSampleFromObject
 {
     double wartoscRegulowana; // Wyjscie z obiektu
+    uint32_t czas;
 
     static SimSampleFromObject fromByteArray(QByteArray data)
     {
         SimSampleFromObject sample;
         QDataStream s(&data, QIODevice::ReadOnly);
-        s >> sample.wartoscRegulowana;
+        s >> sample.wartoscRegulowana >> sample.czas;
         return sample;
     }
     QByteArray toByteArray() const
     {
         QByteArray data;
         QDataStream s(&data, QIODevice::WriteOnly);
-        s << wartoscRegulowana;
+        s << wartoscRegulowana << czas;
         return data;
     }
 
