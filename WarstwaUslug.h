@@ -9,6 +9,7 @@
 #include "utils.hpp"
 #include <QElapsedTimer>
 #include <QMessageBox>
+#include <optional>
 
 enum WybranyRegulator { PID = 0, ONOFF = 1 };
 
@@ -30,7 +31,7 @@ public:
         {
             if(this->value == tryb)
                 return;
-            if(owner->authenticated)
+            if(owner->authenticated.get())
             {
                 if (QMessageBox::question(nullptr, "Rozłączanie", "Czy na pewno chcesz przerwać połączenie i wrócić do trybu stacjonarnego?") == QMessageBox::Yes)
                 {
@@ -44,6 +45,11 @@ public:
             }
             this->value = tryb;
             emit owner->updateUI();
+        }
+        bool hasOwnClock()
+        {
+            return this->value == WarstaUslug::TrybDzialania::NET_ARX_OWN_TICK ||
+                this->value == WarstaUslug::TrybDzialania::NET_REG;
         }
         bool isLocal()
         {
@@ -67,7 +73,7 @@ public:
             assert(value > 1);
             owner->timer.setInterval(value);
             this->value = value;
-            if(owner->trybDzialania.get() != WarstaUslug::TrybDzialania::LOCAL)
+            if(!owner->trybDzialania.isLocal())
                 owner->sendDataPackage(CONFIG_INTERVAL, this->toByteArray());
             emit owner->updateUI();
         }
@@ -76,7 +82,8 @@ public:
             QDataStream s(&data, QIODevice::ReadOnly);
             uint32_t interwal; s >> interwal;
             owner->timer.setInterval(interwal);
-            set(interwal);
+            this->value = interwal;
+            emit owner->updateUI();
         }
         QByteArray toByteArray() const
         {
@@ -94,6 +101,12 @@ public:
                 owner->timer.start();
             else
                 owner->timer.stop();
+            if(owner->authenticated.get())
+            {
+                QByteArray buf;
+                buf.append((int)value);
+                owner->sendDataPackage(SIM_RUNNING, buf);
+            }
             emit owner->updateUI();
         }
         const bool get() const
@@ -106,7 +119,7 @@ public:
         void set(const UAR::RodzajSterowania& value)
         {
             owner->uar.regulator = value;
-            if(owner->authenticated)
+            if(owner->authenticated.get())
                 owner->sendDataPackage(CONFIG_REGULATION, this->toByteArray());
             emit owner->updateUI();
         }
@@ -145,7 +158,7 @@ public:
     } receivedPackets;
 
     WarstaUslug();
-    void reset();
+    void reset(bool send_over_network = true);
 
     PROP(qint64, WarstaUslug)
         GETTER(qint64);
@@ -164,7 +177,7 @@ public:
     {
         return AccessNotifier<ARX>(&arx, [this]()
         {
-            if(authenticated) sendDataPackage(CONFIG_ARX, arx.toByteArray());
+            if(authenticated.get()) sendDataPackage(CONFIG_ARX, arx.toByteArray());
             emit updateUI();
         });
     }
@@ -173,7 +186,7 @@ public:
     {
         return AccessNotifier<RegulatorPID>(&pid, [this]()
         {
-            if(authenticated) sendDataPackage(CONFIG_PID, pid.toByteArray());
+            if(authenticated.get()) sendDataPackage(CONFIG_PID, pid.toByteArray());
             emit updateUI();
         });
     }
@@ -181,7 +194,7 @@ public:
     {
         return AccessNotifier<RegulatorOnOff>(&onOff, [this]()
         {
-            if(authenticated) sendDataPackage(CONFIG_ONOFF, onOff.toByteArray());
+            if(authenticated.get()) sendDataPackage(CONFIG_ONOFF, onOff.toByteArray());
             emit updateUI();
         });
     }
@@ -189,7 +202,7 @@ public:
     {
         return AccessNotifier<GeneratorWartosci>(&generator, [this]()
         {
-            if(authenticated) sendDataPackage(CONFIG_GEN, generator.toByteArray());
+            if(authenticated.get()) sendDataPackage(CONFIG_GEN, generator.toByteArray());
             emit updateUI();
         });
     }
@@ -221,10 +234,6 @@ public:
     void sendSimmulationRestart();
     void sendSimmulationRunning(bool running);
 
-public slots:
-    void sampleReceivedFromRegulatorInstanceNowINeedToForewardItToTheUARAndThenSimmulateARXReactionAndSensTheSignalBack(SimSampleFromRegulator sample); // Nazywanie funkcji to moja pasja
-    void sampleReceivedFromARXObject(SimSampleFromObject sample);
-
 signals:
     void updateCharts(UAR::Tick tick, Czas czas);
     void updateUI();
@@ -240,19 +249,22 @@ signals:
     void authErrorReceived();
     void connected();
     void disconnected();
-    void simmulationRestart(); // możliwe że do usuniecia
+    void simmulationRestarted(); // możliwe że do usuniecia
 
 private:
 
-
-
     bool isServerStarted();
     bool isClientStarted();
+
+    void sendFullConfig();
 
     UAR uar;
     QTimer timer;
     Czas czas;
     QElapsedTimer elapsed;
+
+    UAR::Tick oczekujacy_tick;
+    double ostatnia_rzeczywista_wartosc_z_obiektu_arx;
 
     void handleUnexpecteadDisconnection();
     void disconnectIfNotAuthenticated();
@@ -267,7 +279,6 @@ private:
 
     int currentAuthCode;
     int unsuccessfullAuthAttempts;
-    bool authenticated;
 
 private slots:
     void symuluj();

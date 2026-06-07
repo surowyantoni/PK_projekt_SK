@@ -14,6 +14,7 @@ public:
         double uchyb;
         double wartoscRegulowana;
         double wartoscZadana;
+        bool extrapolated;
     };
     enum class RodzajSterowania { OnOff, PID };
     UAR(ARX* ARX, GeneratorWartosci* gen, RegulatorPID* PID, RegulatorOnOff* OnOff, RodzajSterowania rodzaj);
@@ -21,7 +22,7 @@ public:
     Tick symuluj(uint32_t interwal);
     double symuluj(double wartZadana); // TYLKO do pisania testów
     double symulujObiekt(double wejscie);
-    Tick symulujBezObiektu(uint32_t interwal);
+    Tick symulujRegulator(uint32_t interwal);
     void zaktualizujPoprzendieWyjscie(double wyjscie);
     RodzajSterowania regulator;
 private:

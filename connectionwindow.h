@@ -53,7 +53,6 @@ private:
     WarstaUslug& uslugi;
     QTimer statsTimer;
 
-    void setBufferFill(int percentage);
     QString composeIPAddres();  //Złączenie IP w 1 ciąg
     void decomposeIPAddres(QString ip);   //Rozbicie IP na 4 pola (".")
 };

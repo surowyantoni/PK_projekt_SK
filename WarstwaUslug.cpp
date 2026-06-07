@@ -12,6 +12,12 @@ WarstaUslug::WarstaUslug()
     , interwal{CONSTS::UAR::interwal, this}
     , dziala{CONSTS::UAR::started, this}
     , regulacja{(UAR::RodzajSterowania)CONSTS::UAR::regulator, this}
+    , remoteIP{"", this}
+    , localIP{"", this}
+    , tansmitedPackets{0, this}
+    , receivedPackets{0, this}
+    , measuredInterval{0, this}
+    , authenticated{false, this}
     , arx(ARX())
     , pid(RegulatorPID())
     , onOff(RegulatorOnOff())
@@ -20,12 +26,13 @@ WarstaUslug::WarstaUslug()
     , timer(this)
     , czas{0}
     , elapsed()
+    , oczekujacy_tick{std::nullopt}
+    , ostatnia_rzeczywista_wartosc_z_obiektu_arx{0.0}
     , udpDiscovery{QUdpSocket(this)}
     , udpForSamples{QUdpSocket(this)}
     , port{0}
     , currentAuthCode{0000}
     , unsuccessfullAuthAttempts(0)
-    , authenticated{false}
 {
     timer.setTimerType(Qt::PreciseTimer); // żeby działał dokładniej
     dziala.set(dziala.get()); // wywoalanie settera - ustawienie timera
@@ -42,13 +49,15 @@ WarstaUslug::WarstaUslug()
 
 }
 
-void WarstaUslug::reset()
+void WarstaUslug::reset(bool send_over_network)
 {
     arx.reset();
     pid.reset();
     onOff.reset();
     generator.reset();
     czas = 0;
+    if(send_over_network && authenticated.get())
+        sendDataPackage(SIM_RESTART);
 }
 
 void WarstaUslug::symuluj()
@@ -63,10 +72,19 @@ void WarstaUslug::symuluj()
         emit symulacjaWyrabiaSie(measuredInterval.get() < interwal.get() + CONSTS::GUI::MAX_RUN_LAG_BEFRE_MARKING_RED);
         break;
     case TrybDzialania::NET_REG:
-        ticki_do_uzupelnienia.push(uar.symulujBezObiektu(interwal.get()));
-        netService.sendSample(SimSampleFromRegulator {
-          .wartoscZadana = ticki_do_uzupelnienia.back().wartoscZadana,
-          .sterowanie = ticki_do_uzupelnienia.back().sterowanie
+        if(oczekujacy_tick.extrapolated)
+        {
+            uar.zaktualizujPoprzendieWyjscie(ostatnia_rzeczywista_wartosc_z_obiektu_arx);
+            oczekujacy_tick.wartoscRegulowana = ostatnia_rzeczywista_wartosc_z_obiektu_arx;
+            emit updateCharts(oczekujacy_tick, czas);
+            emit symulacjaWyrabiaSie(false);
+        }
+        oczekujacy_tick = uar.symulujRegulator(interwal.get());
+        oczekujacy_tick.extrapolated = true;
+        sendSample(SimSampleFromRegulator {
+          .wartoscZadana = oczekujacy_tick.wartoscZadana,
+          .sterowanie = oczekujacy_tick.sterowanie,
+          .czas = czas
         });
         break;
     case TrybDzialania::NET_ARX:
@@ -76,50 +94,6 @@ void WarstaUslug::symuluj()
     case TrybDzialania::NET_ARX_OWN_TICK:
         break;
     }
-}
-
-void WarstaUslug::sampleReceivedFromREgulatorInstanceNowINeedToForewardItToTheUARAndThenSimmulateARXReactionAndSensTheSignalBack(SimSampleFromRegulator sample)
-{
-    czas = interwal.get() + czas;
-    double wartoscRegulowana = uar.symulujObiekt(sample.sterowanie);
-    UAR::Tick tick;
-    tick.wartoscRegulowana = wartoscRegulowana;
-    tick.wartoscZadana = sample.wartoscZadana;
-    tick.sterowanie = sample.sterowanie;
-    tick.uchyb = 0.0; // TYMCZASOWO
-    tick.pid = std::nullopt;
-    emit updateCharts(tick, czas);
-
-    SimSampleFromObject newSample {wartoscRegulowana};
-    netService.sendSample(newSample);
-}
-
-void WarstaUslug::sampleReceivedFromARXObjectNowIHaveToBuildTheTickAndSendItToPlotsToUpdateThem(SimSampleFromObject sample)
-{
-    UAR::Tick tick = ticki_do_uzupelnienia.front();
-    ticki_do_uzupelnienia.pop();
-    tick.wartoscRegulowana = sample.wartoscRegulowana;
-    uar.zaktualizujPoprzendieWyjscie(sample.wartoscRegulowana);
-    int fill_percentage = getBufferFillPercentage();
-    if(fill_percentage > 90)
-    {
-        if(interwal.get() == CONSTS::GUI::UAR::interwal_max)
-        {
-            // za szybko, rołącz i przerwij
-            netService.disconnect();
-            emit netService.netError("Nie da się przesyłać próbek symulacji w takiej wolnej sieci!");
-        }
-        else
-        {
-            emit symulacjaWyrabiaSie(false);
-            interwal.set(interwal.get() + CONSTS::GUI::UAR::interwal_step * CONSTS::NET::SIMMULATION_INTERVAL_STEP_MULTIPLIER_WHEN_SIMMULAION_IS_TOO_FAST);
-        }
-    } else if(fill_percentage < 10)
-    {
-        emit symulacjaWyrabiaSie(true);
-    }
-
-    emit updateCharts(tick, czas);
 }
 
 
@@ -168,7 +142,7 @@ void WarstaUslug::chooseAuthWithCode(int code)
     assert(isServerStarted());
     currentAuthCode = code;
     unsuccessfullAuthAttempts = 0;
-    authenticated = false;
+    authenticated.value = false;
     sendDataPackage(AUTH_NEEDED);
     emit netLogAppend("Wysłano prośbę o wpisanie kodu do pratnera.");
 }
@@ -176,9 +150,11 @@ void WarstaUslug::chooseAuthWithCode(int code)
 void WarstaUslug::chooseAuthWithoutCode()
 {
     assert(isServerStarted());
-    authenticated = true;
+    authenticated.value = true;
     unsuccessfullAuthAttempts = 0;
     sendDataPackage(AUTH_SUCCESS);
+    // po poprawnym polsczeniu wyslij konfiguracje
+    sendFullConfig();
     emit connected();
     emit netLogAppend("Połączono w trybie bez autoryzacji.");
 }
@@ -197,15 +173,19 @@ void WarstaUslug::authCodeVerification(int code)
 
 void WarstaUslug::startAsServer(int port)
 {
+    if(server != nullptr)
+    {
+        server->close();
+        server->deleteLater();
+    }
     server = new QTcpServer(this);
-    authenticated = false;
+    authenticated.value = false;
     unsuccessfullAuthAttempts = 0;
     this->port = port;
     QObject::connect(server, &QTcpServer::newConnection, this, &WarstaUslug::handleNewClient);
-    if (server->listen(QHostAddress(localIP.get()), port))
+    if (server->listen(QHostAddress("0.0.0.0"), port))
     {
         emit netLogAppend("Serwer nasłuchuje na porcie " + QString::number(port));
-        udpForSamples.bind(port);
         QObject::connect(&udpForSamples, &QUdpSocket::readyRead, this, [this](){
             processDataPackage(udpForSamples.receiveDatagram().data());
         });
@@ -228,6 +208,7 @@ void WarstaUslug::handleNewClient()
                 {
                     handleUnexpecteadDisconnection();
                 });
+        udpForSamples.bind(QHostAddress("0.0.0.0"), port);
         remoteIP.value = QHostAddress(socket->peerAddress().toIPv4Address()).toString();
         emit netLogAppend("Wykryto połączenie przychodzące z IP: " + remoteIP.get());
     }
@@ -236,7 +217,9 @@ void WarstaUslug::handleNewClient()
 
 void WarstaUslug::connectAsClient(QString ip, int port)
 {
-    udpForSamples.bind(port);
+    udpForSamples.bind(QHostAddress("0.0.0.0"), port);
+    this->port = port;
+    emit netLogAppend("Próba połączenia z " + ip + "...");
     QObject::connect(&udpForSamples, &QUdpSocket::readyRead, this, [this](){
         processDataPackage(udpForSamples.receiveDatagram().data());
     });
@@ -265,7 +248,7 @@ void WarstaUslug::connectAsClient(QString ip, int port)
 void WarstaUslug::handleUnexpecteadDisconnection()
 {
     unsuccessfullAuthAttempts = 0;
-    authenticated = false;
+    authenticated.value = false;
     port = 0;
     udpForSamples.close();
     emit netLogAppend("Połączenie zerwane!");
@@ -281,18 +264,16 @@ void WarstaUslug::disconnectGracefully()
 }
 void WarstaUslug::sendText(QString message)
 {
-    assert(authenticated);
+    assert(authenticated.get());
     sendDataPackage(TXT_MSG, message.toUtf8());
 }
 
 void WarstaUslug::sendSample(SimSampleFromRegulator sample)
 {
-    assert(authenticated);
     sendDataPackage(SIM_SAMPLE_FROM_REGULATOR, sample.toByteArray());
 }
 void WarstaUslug::sendSample(SimSampleFromObject sample)
 {
-    assert(authenticated);
     sendDataPackage(SIM_SAMPLE_FROM_OBJECT, sample.toByteArray());
 }
 
@@ -312,12 +293,16 @@ void WarstaUslug::processDiscoveryUdp()
 
         sender = QHostAddress(sender.toIPv4Address());
 
+        qDebug() << "DISCOVERY" << dg.data();
         if (dg.data() == "UAR_QUERY")
         {
             udpDiscovery.writeDatagram("UAR_RESP", QHostAddress::Broadcast, CONSTS::NET::DISCOVERY_PORT);
             emit netDeviceFound(sender.toString());
-        } else if (dg.data() == "UAR_RESP")
+        }
+        if (dg.data() == "UAR_RESP")
+        {
             emit netDeviceFound(sender.toString());
+        }
     }
 }
 
@@ -348,15 +333,17 @@ void WarstaUslug::processDataPackage(QByteArray data)
         if(dane_pakietu.toInt() == currentAuthCode)
         {
             sendDataPackage(AUTH_SUCCESS);
-            authenticated = true;
+            authenticated.value = true;
             unsuccessfullAuthAttempts = 0;
+            // po poprawnym polsczeniu wyslij konfiguracje
+            sendFullConfig();
             emit connected();
             emit netLogAppend("Połączono klienta w trybie autoryzacji kodem.");
         }
         else
         {
             sendDataPackage(AUTH_FAILED);
-            authenticated = false;
+            authenticated.value = false;
             unsuccessfullAuthAttempts++;
             emit netLogAppend("Nieudana próba połączenia z IP" + remoteIP.get());
         }
@@ -369,7 +356,7 @@ void WarstaUslug::processDataPackage(QByteArray data)
 
     case AUTH_SUCCESS:
         unsuccessfullAuthAttempts = 0;
-        authenticated = true;
+        authenticated.value = true;
         emit netLogAppend("Połączenie udane! Tryb sieciowy aktywny.");
         emit connected();
         break;
@@ -420,22 +407,49 @@ void WarstaUslug::processDataPackage(QByteArray data)
 
     case SIM_SAMPLE_FROM_OBJECT:
         disconnectIfNotAuthenticated();
-        sampleReceivedFromARXObjectNowIHaveToBuildTheTickAndSendItToPlotsToUpdateThem(SimSampleFromObject::fromByteArray(dane_pakietu));
+        {
+            SimSampleFromObject sample = SimSampleFromObject::fromByteArray(dane_pakietu);
+            if(sample.czas != this->czas)
+            {
+                return;
+            }
+            oczekujacy_tick.extrapolated = false;
+            oczekujacy_tick.wartoscRegulowana = sample.wartoscRegulowana;
+            uar.zaktualizujPoprzendieWyjscie(sample.wartoscRegulowana);
+            ostatnia_rzeczywista_wartosc_z_obiektu_arx = sample.wartoscRegulowana;
+            emit symulacjaWyrabiaSie(true);
+            emit updateCharts(oczekujacy_tick, czas);
+        }
         break;
 
     case SIM_SAMPLE_FROM_REGULATOR:
         disconnectIfNotAuthenticated();
-        sampleReceivedFromREgulatorInstanceNowINeedToForewardItToTheUARAndThenSimmulateARXReactionAndSensTheSignalBack(SimSampleFromRegulator::fromByteArray(dane_pakietu));
+        {
+            SimSampleFromRegulator sample = SimSampleFromRegulator::fromByteArray(dane_pakietu);
+            czas = sample.czas;
+
+            double wartoscRegulowana = uar.symulujObiekt(sample.sterowanie);
+            UAR::Tick tick;
+            tick.wartoscRegulowana = wartoscRegulowana;
+            tick.wartoscZadana = sample.wartoscZadana;
+            tick.sterowanie = sample.sterowanie;
+            tick.uchyb = 0.0; // TYMCZASOWO
+            tick.pid = std::nullopt;
+            tick.extrapolated = false;
+            sendSample(SimSampleFromObject {wartoscRegulowana, sample.czas});
+            emit updateCharts(tick, sample.czas);
+        }
         break;
 
     case SIM_RUNNING:
         disconnectIfNotAuthenticated();
-        dziala.setNoSend(static_cast<bool>(dane_pakietu.toInt()));
+        if(trybDzialania.hasOwnClock())
+            dziala.set(static_cast<bool>(dane_pakietu.toInt()));
         break;
     case SIM_RESTART:
         disconnectIfNotAuthenticated();
-        reset();
-        emit simmulationRestart();
+        reset(false);
+        emit simmulationRestarted();
         emit updateUI();
         break;
     }
@@ -449,7 +463,9 @@ void  WarstaUslug::sendDataPackage(quint8 type, const QByteArray &data)
     QDataStream out(&package, QIODevice::WriteOnly);
     out << type << data;
     tansmitedPackets.value++;
-    if(type == SIM_SAMPLE_FROM_OBJECT || type == SIM_SAMPLE_FROM_REGULATOR)
+
+    if(false)
+    // if(type == SIM_SAMPLE_FROM_OBJECT || type == SIM_SAMPLE_FROM_REGULATOR)
     {
         udpForSamples.writeDatagram(package, QHostAddress(remoteIP.get()), this->port);
     }
@@ -467,7 +483,7 @@ void  WarstaUslug::sendDataPackage(quint8 type, const QByteArray &data)
 }
 void WarstaUslug::disconnectIfNotAuthenticated()
 {
-    if(!authenticated)
+    if(!authenticated.get())
     {
         disconnectGracefully();
     }
@@ -480,5 +496,15 @@ bool WarstaUslug::isServerStarted()
 bool WarstaUslug::isClientStarted()
 {
     return (socket != nullptr && server == nullptr);
+}
+
+void WarstaUslug::sendFullConfig()
+{
+    sendDataPackage(CONFIG_INTERVAL, interwal.toByteArray());
+    sendDataPackage(CONFIG_REGULATION, regulacja.toByteArray());
+    sendDataPackage(CONFIG_ARX, arx.toByteArray());
+    sendDataPackage(CONFIG_PID, pid.toByteArray());
+    sendDataPackage(CONFIG_ONOFF, onOff.toByteArray());
+    sendDataPackage(CONFIG_GEN, generator.toByteArray());
 }
 

@@ -249,7 +249,7 @@ void Plot::paintEvent(QPaintEvent *event)
         step = 1;
 
 #ifdef DEBUG
-    qDebug() << "Rysuję co " << step << " punktów";
+    // qDebug() << "Rysuję co " << step << " punktów";
 #endif // DEBUG
 
     for (size_t idx = step; idx < lista->howManyPoints() - 1; idx += step)
@@ -297,7 +297,12 @@ void Plot::paintEvent(QPaintEvent *event)
         // last_zadana = zadana;
         last_pid = punkt->first.pid.has_value();
         // last_czas = punkt->second;
-
+        if(punkt->first.extrapolated)
+        {
+            p.drawEllipse(sterowanie, 3, 3);
+            p.drawEllipse(regulowana, 3, 3);
+            p.drawEllipse(zadana, 3, 3);
+        }
         std::advance(punkt, step);
     }
 

@@ -26,13 +26,14 @@ MainWindow::MainWindow(QWidget *parent)
         else
             ui->spinBox_interwal->setStyleSheet("background-color: red; color: white;");
     });
-    QObject::connect(&uslugi.netService, &NetService::simmulationRestart, this, [this](){
-        uslugi.reset();
+    QObject::connect(&uslugi, &WarstaUslug::simmulationRestarted, this, [this](){
         pamiec_wykresow.clear();
     });
     QObject::connect(&parameters_arx_window, &ParametryARXWindow::closed, this, [this](){
         ui->pushButton_arx->setEnabled(true);
     });
+
+    ui->actionPolacz->trigger();
 
 
     // Podmieniamy widget na własną klase Plot

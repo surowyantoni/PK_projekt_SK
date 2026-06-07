@@ -24,7 +24,6 @@ SOURCES += \
     connectionwindow.cpp \
     main.cpp \
     mainwindow.cpp \
-    netservice.cpp \
     parametryarxwindow.cpp \
     plot.cpp \
     utils.cpp
@@ -43,7 +42,6 @@ HEADERS += \
     WarstwaUslug.h \
     connectionwindow.h \
     mainwindow.h \
-    netservice.h \
     parametryarxwindow.h \
     plot.hpp \
     utils.hpp
@@ -73,7 +71,6 @@ HEADERS += \
     WarstwaUslug.h \
     connectionwindow.h \
     mainwindow.h \
-    netservice.h \
     parametryarxwindow.h \
     utils.hpp
 

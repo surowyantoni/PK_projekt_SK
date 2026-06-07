@@ -17,9 +17,8 @@ ConnectionWindow::ConnectionWindow(WarstaUslug& uslugi_i, QWidget *parent)
     ui->setupUi(this);
     statsTimer.setInterval(CONSTS::NET::STATS_UPDATE_INTERVAL);
     QObject::connect(&statsTimer, &QTimer::timeout, this, [this](){
-        ui->labelPacketsReceived->setText("RX: " + QString::number(uslugi.netService.getReceived()));
-        ui->labelPacketsSent->setText("TX: " + QString::number(uslugi.netService.getTansmited()));
-        ui->progressBarOpoznienie->setValue(uslugi.getBufferFillPercentage());
+        ui->labelPacketsReceived->setText("RX: " + QString::number(uslugi.receivedPackets.get()));
+        ui->labelPacketsSent->setText("TX: " + QString::number(uslugi.tansmitedPackets.get()));
     });
 
 
@@ -144,7 +143,6 @@ void ConnectionWindow::on_pushButton_Send_clicked()
 void ConnectionWindow::onConnected()
 {
     ui->pushButton_Send->setEnabled(true);
-    ui->pushButton_connection->setText("Rozłącz");
     ui->labelConnStatus->setText("● Połączono");
     ui->labelConnStatus->setStyleSheet("color: green;");
     ui->labelRemoteIP->setText("IP zdalne: " + uslugi.remoteIP.get());
@@ -156,14 +154,6 @@ void ConnectionWindow::onConnected()
 void ConnectionWindow::onDisconnected()
 {
     ui->pushButton_Send->setEnabled(false);
-    if(uslugi.trybDzialania.get() == WarstaUslug::TrybDzialania::NET_REG)
-    {
-        ui->pushButton_connection->setText("Start serwera");
-    }
-    else
-    {
-        ui->pushButton_connection->setText("Połącz");
-    }
     ui->labelConnStatus->setText("● Rozłączono");
     ui->labelConnStatus->setStyleSheet("color: red;");
     ui->labelRemoteIP->setText("IP zdalne: -");
@@ -176,8 +166,8 @@ void ConnectionWindow::onDisconnected()
 
 void ConnectionWindow::updateUI()
 {
-    const bool tryb_sieciowy = uslugi.trybDzialania.get() != WarstaUslug::TrybDzialania::LOCAL;
-    const bool tryb_arx = uslugi.trybDzialania.get() == WarstaUslug::TrybDzialania::NET_ARX;
+    const bool tryb_sieciowy = !uslugi.trybDzialania.isLocal();
+    const bool tryb_arx = uslugi.trybDzialania.isSimmulationObject();
     ui->pushButton_connection->setEnabled(tryb_sieciowy);
     ui->lineEdit_wiadomosc->setEnabled(tryb_sieciowy);
     ui->pushButton_search->setEnabled(tryb_arx);
@@ -188,10 +178,13 @@ void ConnectionWindow::updateUI()
     ui->spinBox_port->setEnabled(tryb_sieciowy);
     ui->lineEdit_wiadomosc->setEnabled(tryb_sieciowy);
     ui->combo_znalezione->setEnabled(tryb_arx);
-    ui->progressBarOpoznienie->setEnabled(tryb_sieciowy && !tryb_arx);
     ui->radioLokalny->setChecked(!tryb_sieciowy);
     ui->radioClient->setChecked(tryb_sieciowy && tryb_arx);
     ui->radioServer->setChecked(tryb_sieciowy && !tryb_arx);
+    if(uslugi.authenticated.get())
+        ui->pushButton_connection->setText(tryb_arx ? "Rozłącz" : "Stop serwera");
+    else
+        ui->pushButton_connection->setText(tryb_arx ? "Połącz" : "Start serwera");
 }
 
 void ConnectionWindow::onAuthChoiceRequired()
@@ -246,18 +239,16 @@ ConnectionWindow::~ConnectionWindow()
 
 void ConnectionWindow::on_radioLokalny_clicked()
 {
-    if(uslugi.trybDzialania.get() == WarstaUslug::TrybDzialania::LOCAL)
+    if(uslugi.trybDzialania.isLocal())
         return;
 
     if (QMessageBox::question(this, "Rozłączanie", "Czy na pewno chcesz przerwać połączenie i wrócić do trybu stacjonarnego?") == QMessageBox::Yes)
     {
-        log("Zażądano rozłączenia z partnerem.");
         uslugi.trybDzialania.set(WarstaUslug::TrybDzialania::LOCAL);
-
     }
     else
     {
-        if(uslugi.trybDzialania.get() == WarstaUslug::TrybDzialania::NET_ARX)
+        if(uslugi.trybDzialania.isSimmulationObject())
             ui->radioClient->setChecked(true);
         else
             ui->radioServer->setChecked(true);
@@ -267,20 +258,13 @@ void ConnectionWindow::on_radioLokalny_clicked()
 
 void ConnectionWindow::on_radioServer_clicked()
 {
-    ui->pushButton_connection->setText("Start serwera");
     uslugi.trybDzialania.set(WarstaUslug::TrybDzialania::NET_REG);
 }
 
 
 void ConnectionWindow::on_radioClient_clicked()
 {
-    ui->pushButton_connection->setText("Połącz");
     uslugi.trybDzialania.set(WarstaUslug::TrybDzialania::NET_ARX);
-}
-
-void ConnectionWindow::setBufferFill(int percentage)
-{
-    ui->progressBarOpoznienie->setValue(percentage);
 }
 
 
@@ -292,31 +276,26 @@ void ConnectionWindow::on_pushButton_search_clicked()
 
 void ConnectionWindow::on_pushButton_connection_clicked()
 {
-    if(uslugi.isAuthenticated())
+    if(uslugi.authenticated.get())
     {
         int res = QMessageBox::question(this, "Rozłączanie", "Czy na pewno chcesz przerwać połączenie i wrócić do trybu stacjonarnego?");
 
         if (res == QMessageBox::Yes)
         {
-            log("Wyłączanie serwera...");
+            log("Rozłączanie ...");
             uslugi.disconnectGracefully();
         }
         return;
     }
-    else
+
+    if(uslugi.trybDzialania.isSimmulationObject())
     {
-        if(uslugi.trybDzialania.get() == WarstaUslug::TrybDzialania::NET_ARX)
-        {
-            QString ip = composeIPAddres();
-            log("Próba połączenia z " + ip + "...");
-            uslugi.connectAsClient(ip, ui->spinBox_port->value());
-        }
-        else if(uslugi.trybDzialania.get() == WarstaUslug::TrybDzialania::NET_REG)
-        {
-            log("Próba uruchomienia serwera...");
-            uslugi.startAsServer(ui->spinBox_port->value());
-            ui->pushButton_connection->setText("Stop serwera");
-        }
+        uslugi.connectAsClient(composeIPAddres(),
+                               ui->spinBox_port->value());
+    }
+    else if(uslugi.trybDzialania.isSimmulationRegulator())
+    {
+        uslugi.startAsServer(ui->spinBox_port->value());
     }
 }
 

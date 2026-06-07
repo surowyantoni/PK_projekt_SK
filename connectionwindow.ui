@@ -399,7 +399,7 @@
        <property name="title">
         <string>Status</string>
        </property>
-       <layout class="QVBoxLayout" stretch="1,1,1,1,1,1,4,1">
+       <layout class="QVBoxLayout" stretch="1,1,1,1,1,4,1">
         <item>
          <widget class="QLabel" name="labelConnStatus">
           <property name="styleSheet">
@@ -437,24 +437,6 @@
            <string>Odebranych pakietów -</string>
           </property>
          </widget>
-        </item>
-        <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_3">
-          <item>
-           <widget class="QLabel" name="label_2">
-            <property name="text">
-             <string>Zapełneinie bufora:</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QProgressBar" name="progressBarOpoznienie">
-            <property name="value">
-             <number>0</number>
-            </property>
-           </widget>
-          </item>
-         </layout>
         </item>
         <item>
          <spacer name="verticalSpacer_2">

@@ -49,18 +49,21 @@ UAR::Tick UAR::symuluj(uint32_t interwal)
 
     tick.wartoscRegulowana = ARX->symuluj(tick.sterowanie);
     poprzednieWyjscie = tick.wartoscRegulowana;
+    tick.extrapolated = false;
     return tick;
 }
 double UAR::symulujObiekt(double sterowanie)
 {
-    return ARX->symuluj(sterowanie);
+    double wyjscie_ARX = ARX->symuluj(sterowanie);
+    poprzednieWyjscie = wyjscie_ARX;
+    return wyjscie_ARX;
 }
 
 void UAR::zaktualizujPoprzendieWyjscie(double wyjscie)
 {
     poprzednieWyjscie = wyjscie;
 }
-UAR::Tick UAR::symulujBezObiektu(uint32_t interwal)
+UAR::Tick UAR::symulujRegulator(uint32_t interwal)
 {
     Tick tick;
     tick.wartoscZadana = gen->generuj(interwal);
