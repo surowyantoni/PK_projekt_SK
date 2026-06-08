@@ -7,7 +7,7 @@
 // ustaw na DEBUG aby skompilować program testujacy
 #define MAIN
 // #define TEST
-#define DEBUG
+// #define DEBUG
 
 
 namespace CONSTS
@@ -15,7 +15,7 @@ namespace CONSTS
     namespace PLOTS
     {
         constexpr bool UPDATE_ON_TICK = false;
-        constexpr unsigned int UPDATE_INTERVAL = 16;
+        constexpr unsigned int UPDATE_INTERVAL = 200;
         constexpr unsigned int WSPOLCZYNNIK_OPTYALIZACJIL = 800; // jak przekroczytmy tyle próbek, to rysujemy co 2, jak przekroczymy 2x tyle to co 3 etc.
     }
     namespace NET
@@ -134,7 +134,7 @@ namespace CONSTS
             constexpr double amplituda_max =  100.0;
             constexpr double amplituda_step=  1.0;
 
-            constexpr double okres_min =  0.0;
+            constexpr double okres_min =  0.1;
             constexpr double okres_max =  100.0;
             constexpr double okres_step=  1.0;
 

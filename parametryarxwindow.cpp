@@ -42,6 +42,7 @@ ParametryARXWindow::ParametryARXWindow(WarstaUslug& uslugi)
 void ParametryARXWindow::closeEvent(QCloseEvent* event)
 {
     this->hide();
+    emit closed();
 }
 
 void ParametryARXWindow::updateUI()
@@ -127,6 +128,9 @@ void ParametryARXWindow::on_buttonBox_accepted()
     arx.instancja->limityZadana.setMax(ui->spinBox_wejscieMax->value());
     arx.instancja->limityZadana.setMin(ui->spinBox_wejscieMin->value());
     arx.instancja->limityZadana.setActive(ui->checkBoxOgraniczeniaWejscia->isChecked());
+
+    this->hide();
+    emit closed();
 }
 
 void ParametryARXWindow::on_pushButton_addWspolczynnik_clicked()

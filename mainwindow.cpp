@@ -119,6 +119,7 @@ void MainWindow::externalUIUpdate()
     ui->spinBox_amplituda->setValue(uslugi.generator.amplituda.get());
     ui->spinBox_skladowaStala->setValue(uslugi.generator.skladowaStala.get());
     ui->spinBox_wypelnienie->setValue(uslugi.generator.wypelnienie.get());
+    ui->horizontalSlider_wypelnienie->setValue(ui->horizontalSlider_wypelnienie->maximum() * ui->spinBox_wypelnienie->value());
     ui->spinBox_okres->setValue(miliToSeconds(uslugi.generator.okres.get()));
     ui->radioButton_sinusoidalny->setChecked(uslugi.generator.typSygnalu.get() == GeneratorWartosci::TypSygnalu::SINUS);
     ui->radioButton_prostokatny->setChecked(uslugi.generator.typSygnalu.get() == GeneratorWartosci::TypSygnalu::KWADRAT);
@@ -161,9 +162,9 @@ void MainWindow::externalUIUpdate()
         ui->groupBox_pid->setEnabled(true);
         ui->groupBox_onoff->setEnabled(true);
         ui->groupBox_regulacja->setEnabled(true);
-        ui->groupBox_wykresy->setEnabled(true);
         ui->groupBox_generator->setEnabled(true);
         ui->groupBox_filtr->setEnabled(true);
+        ui->spinBox_interwal->setEnabled(true);
         ui->pushButton_arx->setEnabled(true);
         ui->pushButton_startStop->setEnabled(true);
         ui->pushButton_reset->setEnabled(true);
@@ -175,7 +176,7 @@ void MainWindow::externalUIUpdate()
     ui->groupBox_pid->setEnabled(isRegulator);
     ui->groupBox_onoff->setEnabled(isRegulator);
     ui->groupBox_regulacja->setEnabled(isRegulator);
-    ui->groupBox_wykresy->setEnabled(true);
+    ui->spinBox_interwal->setEnabled(isRegulator);
     ui->groupBox_generator->setEnabled(isRegulator);
     ui->groupBox_filtr->setEnabled(isRegulator);
     ui->pushButton_startStop->setEnabled(isConnected && isRegulator);

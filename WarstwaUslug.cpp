@@ -189,6 +189,7 @@ void WarstaUslug::startAsServer(int port)
         QObject::connect(&udpForSamples, &QUdpSocket::readyRead, this, [this](){
             processDataPackage(udpForSamples.receiveDatagram().data());
         });
+        dziala.set(false);
     }
     else
         emit netLogAppend("ERROR: Port " + QString::number(port) + " wydaje się być zajęty!");
@@ -251,6 +252,10 @@ void WarstaUslug::handleUnexpecteadDisconnection()
     authenticated.value = false;
     port = 0;
     udpForSamples.close();
+    socket->close();
+    if(!trybDzialania.hasOwnClock())
+        dziala.set(true);
+    trybDzialania.value = WarstaUslug::TrybDzialania::LOCAL;
     emit netLogAppend("Połączenie zerwane!");
     emit disconnected();
     emit updateUI();
@@ -357,6 +362,7 @@ void WarstaUslug::processDataPackage(QByteArray data)
     case AUTH_SUCCESS:
         unsuccessfullAuthAttempts = 0;
         authenticated.value = true;
+        reset(false);
         emit netLogAppend("Połączenie udane! Tryb sieciowy aktywny.");
         emit connected();
         break;

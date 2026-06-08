@@ -73,7 +73,7 @@ public:
             assert(value > 1);
             owner->timer.setInterval(value);
             this->value = value;
-            if(!owner->trybDzialania.isLocal())
+            if(owner->authenticated.get())
                 owner->sendDataPackage(CONFIG_INTERVAL, this->toByteArray());
             emit owner->updateUI();
         }
