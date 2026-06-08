@@ -295,8 +295,8 @@ void Plot::paintEvent(QPaintEvent *event)
         // last_uchyb = uchyb;
         // last_regulowana = regulowana;
         // last_zadana = zadana;
-        last_pid = punkt->first.pid.has_value();
         // last_czas = punkt->second;
+        last_pid = punkt->first.pid.has_value();
         if(punkt->first.extrapolated)
         {
             p.drawEllipse(sterowanie, 3, 3);
