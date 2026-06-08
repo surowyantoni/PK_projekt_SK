@@ -342,6 +342,13 @@
          </property>
         </spacer>
        </item>
+       <item>
+        <widget class="QCheckBox" name="checkBox_udpSamples">
+         <property name="text">
+          <string>Przeysłaj probki po UDP</string>
+         </property>
+        </widget>
+       </item>
       </layout>
      </item>
      <item>

@@ -48,6 +48,8 @@ private slots:
 
     void on_combo_znalezione_currentTextChanged(const QString &arg1);
 
+    void on_checkBox_udpSamples_stateChanged(int arg1);
+
 private:
     Ui::ConnectionWindow *ui;
     WarstaUslug& uslugi;

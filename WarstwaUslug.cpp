@@ -10,6 +10,7 @@
 WarstaUslug::WarstaUslug()
     : trybDzialania{TrybDzialania::LOCAL, this}
     , interwal{CONSTS::UAR::interwal, this}
+    , probkiPoUDP{CONSTS::NET::SMAPLES_OVER_UDP_BY_DEFAULT, this}
     , dziala{CONSTS::UAR::started, this}
     , regulacja{(UAR::RodzajSterowania)CONSTS::UAR::regulator, this}
     , remoteIP{"", this}
@@ -470,8 +471,7 @@ void  WarstaUslug::sendDataPackage(quint8 type, const QByteArray &data)
     out << type << data;
     tansmitedPackets.value++;
 
-    if(false)
-    // if(type == SIM_SAMPLE_FROM_OBJECT || type == SIM_SAMPLE_FROM_REGULATOR)
+    if(probkiPoUDP.get() && (type == SIM_SAMPLE_FROM_OBJECT || type == SIM_SAMPLE_FROM_REGULATOR) )
     {
         udpForSamples.writeDatagram(package, QHostAddress(remoteIP.get()), this->port);
     }

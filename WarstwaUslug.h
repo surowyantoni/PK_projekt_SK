@@ -95,6 +95,11 @@ public:
     } interwal;
 
     PROP(bool, WarstaUslug)
+        GETTER(bool)
+        SETTER(bool)
+    } probkiPoUDP;
+
+    PROP(bool, WarstaUslug)
         void set(const bool& value)
         {
             if(value)

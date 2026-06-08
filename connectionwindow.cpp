@@ -177,6 +177,8 @@ void ConnectionWindow::updateUI()
     ui->spinBox_ip4->setEnabled(tryb_arx);
     ui->spinBox_port->setEnabled(tryb_sieciowy);
     ui->lineEdit_wiadomosc->setEnabled(tryb_sieciowy);
+    ui->checkBox_udpSamples->setEnabled(tryb_sieciowy);
+    ui->checkBox_udpSamples->setChecked(uslugi.probkiPoUDP.get());
     ui->combo_znalezione->setEnabled(tryb_arx);
     ui->radioLokalny->setChecked(!tryb_sieciowy);
     ui->radioClient->setChecked(tryb_sieciowy && tryb_arx);
@@ -303,5 +305,11 @@ void ConnectionWindow::on_pushButton_connection_clicked()
 void ConnectionWindow::on_combo_znalezione_currentTextChanged(const QString &arg1)
 {
     decomposeIPAddres(arg1);
+}
+
+
+void ConnectionWindow::on_checkBox_udpSamples_stateChanged(int arg1)
+{
+    uslugi.probkiPoUDP.set(arg1 == 2);
 }
 

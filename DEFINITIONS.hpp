@@ -25,6 +25,7 @@ namespace CONSTS
         constexpr int MAX_SAMPLES_LAG = 10;
         constexpr unsigned int STATS_UPDATE_INTERVAL = 1000;
         constexpr unsigned int SIMMULATION_INTERVAL_STEP_MULTIPLIER_WHEN_SIMMULAION_IS_TOO_FAST = 1;
+        constexpr bool SMAPLES_OVER_UDP_BY_DEFAULT = false;
 
     }
     namespace ARX
