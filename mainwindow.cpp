@@ -33,7 +33,6 @@ MainWindow::MainWindow(QWidget *parent)
         ui->pushButton_arx->setEnabled(true);
     });
 
-    ui->actionPolacz->trigger();
 
 
     // Podmieniamy widget na własną klase Plot

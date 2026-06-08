@@ -100,7 +100,6 @@ void WarstaUslug::symuluj()
 
 bool WarstaUslug::wczytajZPliku(QString plik)
 {
-    //TODO
     QFile file(plik);
     try
     {
@@ -112,6 +111,15 @@ bool WarstaUslug::wczytajZPliku(QString plik)
 
         QJsonObject arx_obj = root["arx"].toObject();
         arx.fromJSON(arx_obj);
+
+        QJsonObject pid_obj = root["pid"].toObject();
+        pid.fromJSON(pid_obj);
+
+        QJsonObject onOff_obj = root["onOff"].toObject();
+        onOff.fromJSON(onOff_obj);
+
+        QJsonObject generator_obj = root["generator"].toObject();
+        generator.fromJSON(generator_obj);
     }
     catch (...)
     {
@@ -123,13 +131,15 @@ bool WarstaUslug::wczytajZPliku(QString plik)
 }
 void WarstaUslug::zapiszDoPliku(QString plik)
 {
-    //TODO
     QFile file(plik);
     if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
         throw 1;
 
     QJsonObject root = QJsonObject();
     root["arx"] = arx.toJSON();
+    root["pid"] = pid.toJSON();
+    root["onOff"] = onOff.toJSON();
+    root["generator"] = generator.toJSON();
 
     QJsonDocument doc = QJsonDocument(root);
     file.write(doc.toJson());
@@ -252,6 +262,8 @@ void WarstaUslug::handleUnexpecteadDisconnection()
     unsuccessfullAuthAttempts = 0;
     authenticated.value = false;
     port = 0;
+    receivedPackets.value = 0;
+    tansmitedPackets.value = 0;
     udpForSamples.close();
     socket->close();
     if(!trybDzialania.hasOwnClock())

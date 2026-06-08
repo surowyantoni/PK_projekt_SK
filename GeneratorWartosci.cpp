@@ -51,11 +51,32 @@ void GeneratorWartosci::reset()
 
 QJsonObject GeneratorWartosci::toJSON() const
 {
-    return QJsonObject();
+    QJsonObject gen;
+    gen["okres"] = static_cast<int>(okres.get());
+    gen["amplituda"] = amplituda.get();
+    gen["skladowaStala"] = skladowaStala.get();
+    gen["wypelnienie"] = wypelnienie.get();
+    switch (typSygnalu.get()) {
+    case TypSygnalu::KWADRAT:
+        gen["typSygnalu"] = "KWADRAT";
+        break;
+    case TypSygnalu::SINUS:
+        gen["typSygnalu"] = "SINUS";
+        break;
+    }
+    return gen;
 }
 void GeneratorWartosci::fromJSON(QJsonObject& json)
 {
+    okres.set(json["okres"].toInt());
+    amplituda.set(json["amplituda"].toDouble());
+    skladowaStala.set(json["skladowaStala"].toDouble());
+    wypelnienie.set(json["wypelnienie"].toDouble());
 
+    if(json["typSygnalu"].toString() == "KWADRAT")
+        typSygnalu.set(TypSygnalu::KWADRAT);
+    else
+        typSygnalu.set(TypSygnalu::SINUS);
 }
 QByteArray GeneratorWartosci::toByteArray() const
 {

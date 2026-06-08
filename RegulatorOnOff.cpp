@@ -34,11 +34,15 @@ void RegulatorOnOff::reset()
 
 QJsonObject RegulatorOnOff::toJSON() const
 {
-    return QJsonObject();
+    QJsonObject onOff;
+    onOff["histereza"] = histereza.get();
+    onOff["wartoscSterowania"] = wartoscSterowania.get();
+    return onOff;
 }
 void RegulatorOnOff::fromJSON(QJsonObject& json)
 {
-
+    histereza.set(json["histereza"].toDouble());
+    wartoscSterowania.set(json["wartoscSterowania"].toDouble());
 }
 QByteArray RegulatorOnOff::toByteArray() const
 {

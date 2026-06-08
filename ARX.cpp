@@ -1,6 +1,7 @@
 #include "ARX.hpp"
 #include <QDataStream>
 #include <random>
+#include <QJsonArray>
 
 //konstruktory
 ARX::ARX(std::vector<Wspolczynnik>&& wspolczynniki, int k, double z)
@@ -77,12 +78,52 @@ QJsonObject ARX::toJSON() const
     QJsonObject arx;
     arx["k"] = k.get();
     arx["z"] = z.get();
+
+    QJsonObject limityZadana;
+    limityZadana["min"] = this->limityZadana.getMin();
+    limityZadana["max"] = this->limityZadana.getMax();
+    limityZadana["active"] = this->limityZadana.getActive();
+    arx["limityZadana"] = limityZadana;
+
+    QJsonObject limityRegulowana;
+    limityRegulowana["min"] =    this->limityRegulowana.getMin();
+    limityRegulowana["max"] =    this->limityRegulowana.getMax();
+    limityRegulowana["active"] = this->limityRegulowana.getActive();
+    arx["limityRegulowana"] = limityRegulowana;
+
+    QJsonArray wspolczynniki;
+    for(auto& wspolczynnik : this->wspolczynniki.value)
+    {
+        QJsonObject para;
+        para["A"] = wspolczynnik.A;
+        para["B"] = wspolczynnik.B;
+        wspolczynniki.append(para);
+    }
+    arx["wspolczynniki"] = wspolczynniki;
+
     return arx;
 }
 void ARX::fromJSON(QJsonObject& json)
 {
     k.set(json["k"].toInt());
     z.set(json["z"].toDouble());
+
+    QJsonArray wspolczynniki = json["wspolczynniki"].toArray();
+
+    this->wspolczynniki.value.clear();
+    for(auto element : std::as_const(wspolczynniki))
+    {
+        QJsonObject para = element.toObject();
+        this->wspolczynniki.value.push_back(Wspolczynnik{para["A"].toDouble(), para["B"].toDouble()});
+    }
+
+    QJsonObject limityZadana = json["limityZadana"].toObject();
+    this->limityZadana.setMinMax(limityZadana["min"].toDouble(), limityZadana["max"].toDouble());
+    this->limityZadana.setActive(limityZadana["active"].toBool());
+
+    QJsonObject limityRegulowana = json["limityRegulowana"].toObject();
+    this->limityRegulowana.setMinMax(limityRegulowana["min"].toDouble(), limityRegulowana["max"].toDouble());
+    this->limityRegulowana.setActive(limityRegulowana["active"].toBool());
 }
 QByteArray ARX::toByteArray() const
 {

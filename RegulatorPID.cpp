@@ -110,11 +110,29 @@ void RegulatorPID::resetCzesciCalkujacej()
 
 QJsonObject RegulatorPID::toJSON() const
 {
-    return QJsonObject();
+    QJsonObject pid;
+    pid["k"] = k.get();
+    pid["Ti"] = Ti.get();
+    pid["Td"] = Td.get();
+    pid["sposobLiczeniaCalki"] = (int)sposobLiczeniaCalki.get();
+    QJsonObject limityWyjscia;
+    limityWyjscia["min"] = this->limityWyjscia.getMin();
+    limityWyjscia["max"] = this->limityWyjscia.getMax();
+    limityWyjscia["active"] = this->limityWyjscia.getActive();
+    pid["limityWyjscia"] = limityWyjscia;
+    pid["antiWindup"] = antiWindupActive.get();
+    return pid;
 }
 void RegulatorPID::fromJSON(QJsonObject& json)
 {
-
+    k.set(json["k"].toDouble());
+    Ti.set(json["Ti"].toDouble());
+    Td.set(json["Td"].toDouble());
+    sposobLiczeniaCalki.set((SposobLiczeniaCalki)json["sposobLiczeniaCalki"].toInt());
+    QJsonObject limityWyjscia = json["limityWyjscia"].toObject();
+    this->limityWyjscia.setMinMax(limityWyjscia["min"].toDouble(), limityWyjscia["max"].toDouble());
+    this->limityWyjscia.setActive(limityWyjscia["active"].toBool());
+    antiWindupActive.set(json["antiWindup"].toBool());
 }
 QByteArray RegulatorPID::toByteArray() const
 {
