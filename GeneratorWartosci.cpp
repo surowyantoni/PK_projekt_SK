@@ -16,18 +16,22 @@ GeneratorWartosci::GeneratorWartosci(double amplituda, double skladowaStala, uin
 double GeneratorWartosci::generuj(uint32_t przeskok)
 {
     double wartosc = 0.0;
-    if(krok > okres.get()) krok = krok % okres.get(); // IMA STUPID
-    switch (typSygnalu.get()) {
-    case TypSygnalu::KWADRAT:
-        wartosc += ((miejsceWCyklu() <= wypelnienie.get() ? 1.0 : 0.0));
-        break;
-    case TypSygnalu::SINUS:
-        wartosc += std::sin(2.0 * M_PI * (miejsceWCyklu()));
-        break;
-    default:
-        break;
+    if(okres.get() != 0)
+    {
+        if(krok > okres.get()) krok = krok % okres.get(); // IMA STUPID
+        switch (typSygnalu.get())
+        {
+        case TypSygnalu::KWADRAT:
+            wartosc += ((miejsceWCyklu() <= wypelnienie.get() ? 1.0 : 0.0));
+            break;
+        case TypSygnalu::SINUS:
+            wartosc += std::sin(2.0 * M_PI * (miejsceWCyklu()));
+            break;
+        default:
+            break;
+        }
     }
-    krok+= przeskok;
+    krok += przeskok;
     wartosc *= amplituda.get();
     wartosc += skladowaStala.get();
     return wartosc;

@@ -25,7 +25,6 @@ public:
         GETTER(uint32_t)
         void set(const uint32_t& value)
         {
-            assert(value >= 1);
             this->value = value;
         }
     } okres;

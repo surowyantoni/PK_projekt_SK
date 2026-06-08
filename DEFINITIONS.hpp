@@ -135,7 +135,7 @@ namespace CONSTS
             constexpr double amplituda_max =  100.0;
             constexpr double amplituda_step=  1.0;
 
-            constexpr double okres_min =  0.1;
+            constexpr double okres_min =  0.0;
             constexpr double okres_max =  100.0;
             constexpr double okres_step=  1.0;
 
