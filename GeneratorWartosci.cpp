@@ -19,7 +19,7 @@ double GeneratorWartosci::generuj(uint32_t przeskok)
     if(krok > okres.get()) krok = krok % okres.get(); // IMA STUPID
     switch (typSygnalu.get()) {
     case TypSygnalu::KWADRAT:
-        wartosc += ((miejsceWCyklu() < wypelnienie.get() ? 1.0 : 0.0));
+        wartosc += ((miejsceWCyklu() > wypelnienie.get() ? 1.0 : 0.0));
         break;
     case TypSygnalu::SINUS:
         wartosc += std::sin(2.0 * M_PI * (miejsceWCyklu()));

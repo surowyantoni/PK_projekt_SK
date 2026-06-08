@@ -52,8 +52,13 @@ UAR::Tick UAR::symuluj(uint32_t interwal)
     tick.extrapolated = false;
     return tick;
 }
-double UAR::symulujObiekt(double sterowanie)
+double UAR::symulujObiekt(double sterowanie, double wartosc_zadana, uint32_t interwal)
 {
+    // aktualizacaj stanu obiektów
+    gen->generuj(interwal);
+    PID->symuluj(wartosc_zadana - poprzednieWyjscie);
+
+
     double wyjscie_ARX = ARX->symuluj(sterowanie);
     poprzednieWyjscie = wyjscie_ARX;
     return wyjscie_ARX;
@@ -81,6 +86,8 @@ UAR::Tick UAR::symulujRegulator(uint32_t interwal)
         tick.sterowanie = OnOff->symuluj(tick.uchyb);
         break;
     }
+
+    ARX->symuluj(tick.sterowanie);
 
     // Nie ustawione, bo dostenimy wartość dopiero gdy obiekt odpowie
     tick.wartoscRegulowana = 0.0;

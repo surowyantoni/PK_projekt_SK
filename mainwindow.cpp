@@ -178,7 +178,7 @@ void MainWindow::externalUIUpdate()
     ui->groupBox_wykresy->setEnabled(true);
     ui->groupBox_generator->setEnabled(isRegulator);
     ui->groupBox_filtr->setEnabled(isRegulator);
-    ui->pushButton_startStop->setEnabled(isConnected);
+    ui->pushButton_startStop->setEnabled(isConnected && isRegulator);
     ui->pushButton_reset->setEnabled(isConnected);
 }
 

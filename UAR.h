@@ -21,7 +21,7 @@ public:
 
     Tick symuluj(uint32_t interwal);
     double symuluj(double wartZadana); // TYLKO do pisania testów
-    double symulujObiekt(double wejscie);
+    double symulujObiekt(double wejscie, double wartosc_zadana,  uint32_t interwal);
     Tick symulujRegulator(uint32_t interwal);
     void zaktualizujPoprzendieWyjscie(double wyjscie);
     RodzajSterowania regulator;

@@ -428,7 +428,7 @@ void WarstaUslug::processDataPackage(QByteArray data)
             SimSampleFromRegulator sample = SimSampleFromRegulator::fromByteArray(dane_pakietu);
             czas = sample.czas;
 
-            double wartoscRegulowana = uar.symulujObiekt(sample.sterowanie);
+            double wartoscRegulowana = uar.symulujObiekt(sample.sterowanie, sample.wartoscZadana, interwal.get());
             UAR::Tick tick;
             tick.wartoscRegulowana = wartoscRegulowana;
             tick.wartoscZadana = sample.wartoscZadana;
