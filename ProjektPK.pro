@@ -56,9 +56,6 @@ qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
-RESOURCES += \
-    wzor.qrc
-
 
 HEADERS += \
     ARX.hpp \
@@ -79,8 +76,6 @@ FORMS += \
     mainwindow.ui \
     parametryarxwindow.ui
 
-RESOURCES += \
-    wzor.qrc
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
